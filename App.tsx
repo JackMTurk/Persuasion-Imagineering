@@ -1,10 +1,10 @@
 
 import React, { useState, useCallback } from 'react';
-import { DiagnosticForm } from './components/DiagnosticForm';
-import { ReportDisplay } from './components/ReportDisplay';
-import { FormData, Report } from './types';
-import { generateReport } from './services/geminiService';
-import { LogoIcon, SparklesIcon } from './components/icons';
+import { DiagnosticForm } from './components/DiagnosticForm.tsx';
+import { ReportDisplay } from './components/ReportDisplay.tsx';
+import { FormData, Report } from './types.ts';
+import { generateReport } from './services/geminiService.ts';
+import { LogoIcon, SparklesIcon } from './components/icons.tsx';
 
 const App: React.FC = () => {
   const [report, setReport] = useState<Report | null>(null);

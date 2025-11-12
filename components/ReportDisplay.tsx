@@ -1,7 +1,7 @@
 
 import React, { useRef, useState, useCallback } from 'react';
-import { Report } from '../types';
-import { PersonaIcon, EdgeIcon, OpportunityIcon, QuickWinsIcon, BuildPlanIcon, GuardrailsIcon, ToolsIcon, PromptsIcon, CopyIcon, DownloadIcon, JsonIcon, BackIcon } from './icons';
+import { Report } from '../types.ts';
+import { PersonaIcon, EdgeIcon, OpportunityIcon, QuickWinsIcon, BuildPlanIcon, GuardrailsIcon, ToolsIcon, PromptsIcon, CopyIcon, DownloadIcon, JsonIcon, BackIcon } from './icons.tsx';
 
 // FIX: Add global type declarations for window properties from external scripts (jsPDF, html2canvas)
 declare global {

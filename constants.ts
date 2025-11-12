@@ -1,4 +1,4 @@
-import { FormData, Scores, Workstyle, Budget, AgeBracket, Market } from './types';
+import { FormData, Scores, Workstyle, Budget, AgeBracket, Market } from './types.ts';
 
 export const SKILL_DEFINITIONS: { [key in keyof Scores]: { label: string, prompt: string } } = {
   communication: {

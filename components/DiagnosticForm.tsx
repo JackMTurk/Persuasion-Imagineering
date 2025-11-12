@@ -1,10 +1,10 @@
 import React, { useState, FormEvent } from 'react';
-import { FormData, SKILL_KEYS } from '../types';
-import { INITIAL_FORM_DATA, SKILL_DEFINITIONS, WORKSTYLE_OPTIONS, BUDGET_OPTIONS, AGE_BRACKET_OPTIONS, MARKET_OPTIONS } from '../constants';
-import { SliderInput } from './SliderInput';
-import { MultiSelect } from './MultiSelect';
-import { RadioGroup } from './RadioGroup';
-import { SparklesIcon } from './icons';
+import { FormData, SKILL_KEYS } from '../types.ts';
+import { INITIAL_FORM_DATA, SKILL_DEFINITIONS, WORKSTYLE_OPTIONS, BUDGET_OPTIONS, AGE_BRACKET_OPTIONS, MARKET_OPTIONS } from '../constants.ts';
+import { SliderInput } from './SliderInput.tsx';
+import { MultiSelect } from './MultiSelect.tsx';
+import { RadioGroup } from './RadioGroup.tsx';
+import { SparklesIcon } from './icons.tsx';
 
 interface DiagnosticFormProps {
   onSubmit: (formData: FormData) => void;

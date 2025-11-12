@@ -1,6 +1,7 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import { FormData, Report, Scores, SKILL_KEYS } from '../types';
-import { PERSONA_MAP, GOOGLE_SHEET_ENDPOINT, AWEBER_ENDPOINT } from '../constants';
+import { FormData, Report, Scores, SKILL_KEYS } from '../types.ts';
+import { PERSONA_MAP, GOOGLE_SHEET_ENDPOINT, AWEBER_ENDPOINT } from '../constants.ts';
 
 // FIX: Per @google/genai guidelines, initialize directly with the environment variable.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
