@@ -28,6 +28,14 @@
         background-color: #f0f2f5;
       }
     </style>
+
+    <!-- Polyfill to prevent "process is not defined" error in browser environments -->
+    <script>
+      if (typeof window.process === 'undefined') {
+        window.process = { env: {} };
+      }
+    </script>
+
     <!-- Add Babel Standalone to transpile JSX in the browser -->
     <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
   </head>

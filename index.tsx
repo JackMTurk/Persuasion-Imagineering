@@ -1,11 +1,8 @@
 
+
 import React, { useState, useCallback, useRef, FormEvent } from 'react';
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
-
-// Polyfill for browser environment. The Gemini SDK requires `process.env.API_KEY`.
-// This prevents a crash when the code runs in a browser where `process` is not native.
-if (typeof process === 'undefined') { (window as any).process = { env: {} }; }
 
 // --- Global Type Declarations ---
 declare global {
@@ -106,7 +103,7 @@ const AWEBER_ENDPOINT = "https://hook.us1.make.com/k71oy4mebyi2rhjukfe246y5nlcui
 
 // --- Icon Components ---
 const LogoIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" /></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1-H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" /></svg>
 );
 const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 22.5l-.648-1.938a2.25 2.25 0 01-1.463-1.463L12 18.75l1.938-.648a2.25 2.25 0 011.463-1.463L16.25 15l.648 1.938a2.25 2.25 0 011.463 1.463L19.5 18.75l-1.938.648a2.25 2.25 0 01-1.463 1.463z" /></svg>
@@ -276,7 +273,8 @@ const generateReport = async (formData: FormData): Promise<Report> => {
         const userContent = buildUserContent(formData, persona, topSkills, normalizedScores);
 
         const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash', contents: userContent,
+          model: 'gemini-2.5-flash',
+          contents: { parts: [{ text: userContent }] },
           config: { systemInstruction, responseMimeType: "application/json", responseSchema: reportSchema }
         });
 
@@ -427,6 +425,7 @@ const ReportDisplay: React.FC<{ report: Report; onReset: () => void; }> = ({ rep
                 <div className="grid md:grid-cols-2 gap-x-8">
                     <ReportSection title="Quick Wins (Next 7-14 days)" icon={<QuickWinsIcon className="h-7 w-7 text-yellow-500" />}><ul className="list-disc list-inside space-y-1">{report.quickWins.map((win, i) => <li key={i}>{win}</li>)}</ul></ReportSection>
                     <ReportSection title="30-Day Build Plan" icon={<BuildPlanIcon className="h-7 w-7 text-teal-500" />}><ul className="list-disc list-inside space-y-1">{report.buildPlan.map((step, i) => <li key={i}>{step}</li>)}</ul></ReportSection>
+                    {/* Fix: Changed closing tag from </TReportSection> to </ReportSection> */}
                     <ReportSection title="Guardrails (Not Worth Your Time)" icon={<GuardrailsIcon className="h-7 w-7 text-red-500" />}><ul className="list-disc list-inside space-y-1">{report.guardrails.map((g, i) => <li key={i}>{g}</li>)}</ul></ReportSection>
                     <ReportSection title="Tools to Explore" icon={<ToolsIcon className="h-7 w-7 text-purple-500" />}><p>{report.tools.join(' • ')}</p></ReportSection>
                 </div>
