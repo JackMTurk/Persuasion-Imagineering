@@ -1,5 +1,3 @@
-
-
 import React, { useState, useCallback, useRef, FormEvent } from 'react';
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -261,9 +259,15 @@ const postToEndpoint = async (url: string, data: object) => {
 };
 
 const generateReport = async (formData: FormData): Promise<Report> => {
-    // The AI client must be initialized with an API key. This is fetched from the
-    // environment variables, which is the standard secure practice.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Safely access the API key from the environment.
+    // This uses optional chaining to prevent a "process is not defined" crash.
+    const apiKey = (window as any).process?.env?.API_KEY;
+    if (!apiKey) {
+        // Provide a clear, user-friendly error if the API key is not configured.
+        throw new Error("API Key is not configured. Please ensure it's set up in your environment before generating the report.");
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
     
     try {
         const normalizedScores = normalizeScores(formData.scores);
@@ -295,10 +299,9 @@ const generateReport = async (formData: FormData): Promise<Report> => {
         return finalReport;
     } catch (error) {
         console.error("Error generating report:", error);
-        if (error instanceof Error && /API key not valid/i.test(error.message)) {
-            throw new Error("The API key is invalid. Please check the value in your environment variables.");
-        }
-        throw new Error("Failed to generate your Renaissance Map. The AI may be experiencing high demand. Please try again later.");
+        const errorMessage = error instanceof Error ? error.message : 'An unknown API error occurred.';
+        // The error is re-thrown to be caught by the App component's state handler.
+        throw new Error(`Failed to generate your report. This could be due to an invalid API key or a problem with the AI service. Please verify your API key and try again. (Original error: ${errorMessage})`);
     }
 };
 
