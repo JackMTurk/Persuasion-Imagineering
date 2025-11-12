@@ -505,16 +505,9 @@ const postToAweber = async (name: string, email: string) => {
 };
 
 const generateReport = async (formData: FormData): Promise<Report> => {
-    let ai;
-    try {
-        if (typeof process === 'undefined' || !process.env.API_KEY) {
-            throw new Error("API_KEY environment variable not found.");
-        }
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    } catch (e) {
-        console.error("Failed to initialize GoogleGenAI. Is the API_KEY environment variable set?", e);
-        throw new Error("Configuration Error: The API key is missing. Please ensure it is configured in your environment variables.");
-    }
+    // Per platform guidelines, the API key is guaranteed to be available in process.env.
+    // The complex try/catch for initialization is removed to prevent environment-related crashes.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     try {
         const normalizedScores = normalizeScores(formData.scores);
