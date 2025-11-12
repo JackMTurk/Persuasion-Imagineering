@@ -4,7 +4,7 @@ import { FormData, Report, Scores, SKILL_KEYS } from '../types.ts';
 import { PERSONA_MAP, GOOGLE_SHEET_ENDPOINT, AWEBER_ENDPOINT } from '../constants.ts';
 
 // FIX: Per @google/genai guidelines, initialize directly with the environment variable.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// REMOVED: Global AI client initialization to prevent crash on load in environments without process.env.
 
 // FIX: Added response schema for robust JSON output.
 const reportSchema = {
@@ -167,6 +167,18 @@ const buildUserContent = (formData: FormData, persona: string, topSkills: (keyof
 
 
 export const generateReport = async (formData: FormData): Promise<Report> => {
+    let ai;
+    try {
+        // This check handles environments where `process` is not defined (like a browser without a build step).
+        if (typeof process === 'undefined' || !process.env.API_KEY) {
+            throw new Error("API_KEY environment variable not found.");
+        }
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    } catch (e) {
+        console.error("Failed to initialize GoogleGenAI. Is the API_KEY environment variable set on your deployment platform?", e);
+        throw new Error("Configuration Error: The API key is missing. Please add it to your environment variables on Render.com to proceed.");
+    }
+    
     try {
         const normalizedScores = normalizeScores(formData.scores);
         const topSkills = identifyTopSkills(normalizedScores);
@@ -215,6 +227,9 @@ export const generateReport = async (formData: FormData): Promise<Report> => {
         return finalReport;
     } catch (error) {
         console.error("Error generating report:", error);
+        if (error instanceof Error && /API key not valid/i.test(error.message)) {
+            throw new Error("The API key is invalid. Please check the value in your Render.com environment variables.");
+        }
         throw new Error("Failed to generate your Renaissance Map. The AI may be experiencing high demand. Please try again later.");
     }
 };
