@@ -3,6 +3,10 @@ import React, { useState, useCallback, useRef, FormEvent } from 'react';
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
 
+// Polyfill for browser environment. The Gemini SDK requires `process.env.API_KEY`.
+// This prevents a crash when the code runs in a browser where `process` is not native.
+if (typeof process === 'undefined') { (window as any).process = { env: {} }; }
+
 // --- Global Type Declarations ---
 declare global {
     interface Window {
@@ -260,9 +264,8 @@ const postToEndpoint = async (url: string, data: object) => {
 };
 
 const generateReport = async (formData: FormData): Promise<Report> => {
-    // CRITICAL FIX: Initialize the AI client directly inside the function.
-    // This removes the faulty environment check that was causing a crash on startup.
-    // The platform guarantees `process.env.API_KEY` is available here.
+    // The AI client must be initialized with an API key. This is fetched from the
+    // environment variables, which is the standard secure practice.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     try {
