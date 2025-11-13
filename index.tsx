@@ -259,10 +259,10 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; formData: Fo
 
     return (
         <div className="bg-noir-bg min-h-screen p-4 sm:p-6 md:p-8">
-          <div className="max-w-4xl mx-auto bg-noir-paper p-6 sm:p-8 md:p-12 rounded-lg shadow-2xl">
+          <div className="max-w-3xl mx-auto bg-noir-paper p-6 sm:p-8 md:p-12 rounded-lg shadow-2xl">
               <div ref={reportRef} className="report-content p-8">
                    <header className="text-center border-b-2 border-noir-border pb-6 mb-8">
-                      <h1 className="font-heading text-4xl md:text-5xl text-noir-text">Your Persuasion Imagineering Report</h1>
+                      <h1 className="font-heading text-4xl md:text-5xl text-noir-text">Your P.I. Manifesto & Plan</h1>
                       <p className="text-lg text-noir-text-secondary mt-2">Prepared for: {formData.name}</p>
                       <p className="font-heading text-2xl text-noir-green mt-4">Your Persona: {persona}</p>
                   </header>
@@ -313,26 +313,24 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; formData: Fo
                           </div>
                       </section>
 
-                      <div className="grid md:grid-cols-2 gap-10 mb-10">
-                          <section>
-                              <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /> </svg>
-                                  <span>Quick Wins (This Week)</span>
-                              </h2>
-                              <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
-                                  {report.quickWins.map((win, index) => <li key={index}>{win}</li>)}
-                              </ul>
-                          </section>
-                          <section>
-                              <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /> </svg>
-                                  <span>90-Day Build Plan</span>
-                              </h2>
-                              <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
-                                  {report.buildPlan.map((item, index) => <li key={index}>{item}</li>)}
-                              </ul>
-                          </section>
-                      </div>
+                      <section className="mb-10">
+                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /> </svg>
+                              <span>Quick Wins (This Week)</span>
+                          </h2>
+                          <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
+                              {report.quickWins.map((win, index) => <li key={index}>{win}</li>)}
+                          </ul>
+                      </section>
+                      <section className="mb-10">
+                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /> </svg>
+                              <span>90-Day Build Plan</span>
+                          </h2>
+                          <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
+                              {report.buildPlan.map((item, index) => <li key={index}>{item}</li>)}
+                          </ul>
+                      </section>
 
                        <section className="mb-10">
                           <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
