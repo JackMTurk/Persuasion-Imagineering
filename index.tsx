@@ -1,17 +1,21 @@
+
+
 import React, { useState, useCallback, useRef, FormEvent, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Modality } from "@google/genai";
 
 // --- Global Type Declarations ---
-// FIX: Inlined the AIStudio interface within the global Window interface to resolve a TypeScript error about duplicate or conflicting declarations of 'aistudio'.
+// FIX: To resolve a TypeScript error about duplicate declarations, a named interface `AIStudio` is now defined and used for `window.aistudio`. This ensures type consistency across all declarations, as required by the compiler when multiple declarations for the same property exist.
 declare global {
+    interface AIStudio {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    }
     interface Window {
         jspdf: any;
         html2canvas: any;
-        aistudio: {
-          hasSelectedApiKey: () => Promise<boolean>;
-          openSelectKey: () => Promise<void>;
-        };
+        // FIX: Made the 'aistudio' property on the 'Window' interface optional to resolve a conflict with another declaration that likely has it as optional. The existing code already safely checks for its existence.
+        aistudio?: AIStudio;
         process?: {
             env?: {
                 API_KEY?: string;
@@ -110,8 +114,8 @@ const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwGfWfFzC
 const AWEBER_ENDPOINT = "https://hook.us1.make.com/k71oy4mebyi2rhjukfe246y5nlcui6in";
 
 // --- Icon Components ---
-const LogoIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1-H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" /></svg>
+const LogoImage: React.FC<{ className?: string }> = ({ className }) => (
+  <img src="persuasion-imagineer-logo.png" alt="Persuasion Imagineer" className={className} />
 );
 const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 22.5l-.648-1.938a2.25 2.25 0 01-1.463-1.463L12 18.75l1.938-.648a2.25 2.25 0 011.463-1.463L16.25 15l.648 1.938a2.25 2.25 0 011.463 1.463L19.5 18.75l-1.938.648a2.25 2.25 0 01-1.463 1.463z" /></svg>
@@ -155,17 +159,17 @@ const BackIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 // --- UI Components ---
 const SliderInput: React.FC<{ label: string; prompt: string; value: number; onChange: (value: number) => void; }> = ({ label, prompt, value, onChange }) => {
-  const getBackgroundColor = (value: number) => `linear-gradient(to right, #4f46e5 ${value * 10}%, #e5e7eb ${value * 10}%)`;
+  const getBackgroundColor = (value: number) => `linear-gradient(to right, #d97706 ${value * 10}%, #d1d5db ${value * 10}%)`;
   return (
     <div className="py-4">
-      <label className="block text-sm font-medium text-gray-800">{label}</label>
-      <p className="text-sm text-gray-500 mt-1 mb-3">{prompt}</p>
+      <label className="block text-sm font-medium text-slate-800">{label}</label>
+      <p className="text-sm text-slate-600 mt-1 mb-3">{prompt}</p>
       <div className="flex items-center gap-4">
-        <input type="range" min="0" max="10" value={value} onChange={(e) => onChange(parseInt(e.target.value, 10))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb" style={{ background: getBackgroundColor(value) }} />
-        <span className="font-semibold text-indigo-600 w-8 text-center bg-indigo-50 rounded-md py-1">{value}</span>
+        <input type="range" min="0" max="10" value={value} onChange={(e) => onChange(parseInt(e.target.value, 10))} className="w-full h-2 bg-slate-300 rounded-lg appearance-none cursor-pointer slider-thumb" style={{ background: getBackgroundColor(value) }} />
+        <span className="font-semibold text-amber-800 w-8 text-center bg-amber-100 rounded-md py-1">{value}</span>
       </div>
-      <div className="flex justify-between text-xs text-gray-500 mt-1"><span>Novice</span><span>World-Class Pro</span></div>
-      <style>{`.slider-thumb::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;background:#fff;border:2px solid #4f46e5;border-radius:50%;cursor:pointer;}.slider-thumb::-moz-range-thumb{width:20px;height:20px;background:#fff;border:2px solid #4f46e5;border-radius:50%;cursor:pointer;}`}</style>
+      <div className="flex justify-between text-xs text-slate-500 mt-1"><span>Novice</span><span>World-Class Pro</span></div>
+      <style>{`.slider-thumb::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;background:#f5f1e8;border:2px solid #d97706;border-radius:50%;cursor:pointer;}.slider-thumb::-moz-range-thumb{width:20px;height:20px;background:#f5f1e8;border:2px solid #d97706;border-radius:50%;cursor:pointer;}`}</style>
     </div>
   );
 };
@@ -177,11 +181,11 @@ const MultiSelect = <T extends string>({ label, prompt, options, selectedOptions
   };
   return (
     <div className="py-4">
-      <label className="block text-sm font-medium text-gray-800">{label}</label>
-      <p className="text-sm text-gray-500 mt-1 mb-3">{prompt}</p>
+      <label className="block text-sm font-medium text-slate-800">{label}</label>
+      <p className="text-sm text-slate-600 mt-1 mb-3">{prompt}</p>
       <div className="flex flex-wrap gap-2">
         {options.map(option => (
-          <button key={option} type="button" onClick={() => handleSelect(option)} className={`px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ${selectedOptions.includes(option) ? 'bg-indigo-600 text-white ring-2 ring-offset-2 ring-indigo-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+          <button key={option} type="button" onClick={() => handleSelect(option)} className={`px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ${selectedOptions.includes(option) ? 'bg-amber-600 text-white ring-2 ring-offset-2 ring-amber-500' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
             {option}
           </button>
         ))}
@@ -192,13 +196,13 @@ const MultiSelect = <T extends string>({ label, prompt, options, selectedOptions
 
 const RadioGroup = <T extends string>({ label, prompt, options, selectedValue, onChange }: { label: string; prompt: string; options: { value: T; label: string; }[]; selectedValue: T; onChange: (value: T) => void; }) => (
   <div className="py-4">
-    <label className="block text-sm font-medium text-gray-800">{label}</label>
-    <p className="text-sm text-gray-500 mt-1 mb-3">{prompt}</p>
+    <label className="block text-sm font-medium text-slate-800">{label}</label>
+    <p className="text-sm text-slate-600 mt-1 mb-3">{prompt}</p>
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       {options.map(option => (
-        <label key={option.value} className={`relative flex items-center justify-center p-4 border rounded-lg cursor-pointer transition-all duration-200 ${selectedValue === option.value ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500' : 'bg-white border-gray-300 hover:border-gray-400'}`}>
+        <label key={option.value} className={`relative flex items-center justify-center p-4 border rounded-lg cursor-pointer transition-all duration-200 ${selectedValue === option.value ? 'bg-amber-100 border-amber-500 ring-2 ring-amber-500' : 'bg-white border-slate-400 hover:border-slate-500'}`}>
           <input type="radio" name={label} value={option.value} checked={selectedValue === option.value} onChange={() => onChange(option.value)} className="sr-only" />
-          <span className="text-sm font-medium text-gray-800">{option.label}</span>
+          <span className="text-sm font-medium text-slate-800">{option.label}</span>
         </label>
       ))}
     </div>
@@ -206,7 +210,7 @@ const RadioGroup = <T extends string>({ label, prompt, options, selectedValue, o
 );
 
 const FormSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="border-t border-gray-200 pt-6 mt-6"><h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3><div className="space-y-4">{children}</div></div>
+    <div className="border-t border-slate-300 pt-6 mt-6"><h3 className="font-heading text-2xl text-slate-900 mb-4">{title}</h3><div className="space-y-4">{children}</div></div>
 );
 
 // --- Gemini Service ---
@@ -339,62 +343,62 @@ const DiagnosticForm: React.FC<{ onSubmit: (formData: FormData) => void; }> = ({
   
   return (
     <form onSubmit={handleSubmit} className="p-6 sm:p-10" noValidate>
-      <div className="text-center mb-8"><h2 className="text-2xl font-bold text-gray-900">Discover Your AI-Era Persona</h2><p className="mt-2 text-gray-600">Turn your scattered skills into a clear plan for value creation. Rate yourself honestly—your edge, not your ego.</p></div>
-      <FormSection title="Basic Info">
-        <div><label htmlFor="name" className="block text-sm font-medium text-gray-800">Name</label><input type="text" id="name" value={formData.name} onChange={e => handleChange('name', e.target.value)} className={`mt-1 block w-full px-3 py-2 border ${formErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900`} required />{formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}</div>
-        <div><label htmlFor="email" className="block text-sm font-medium text-gray-800">Email</label><input type="email" id="email" value={formData.email} onChange={e => handleChange('email', e.target.value)} className={`mt-1 block w-full px-3 py-2 border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900`} required />{formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}</div>
+      <div className="text-center mb-8"><h2 className="font-heading text-4xl text-slate-900">Your Diagnostic Debriefing</h2><p className="mt-2 text-slate-600">Turn your scattered skills into a clear plan for value creation. Rate yourself honestly—your edge, not your ego.</p></div>
+      <FormSection title="Case File Vitals">
+        <div><label htmlFor="name" className="block text-sm font-medium text-slate-800">Name</label><input type="text" id="name" value={formData.name} onChange={e => handleChange('name', e.target.value)} className={`mt-1 block w-full px-3 py-2 border ${formErrors.name ? 'border-red-500' : 'border-slate-400'} rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 bg-slate-100 text-slate-900`} required />{formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}</div>
+        <div><label htmlFor="email" className="block text-sm font-medium text-slate-800">Email</label><input type="email" id="email" value={formData.email} onChange={e => handleChange('email', e.target.value)} className={`mt-1 block w-full px-3 py-2 border ${formErrors.email ? 'border-red-500' : 'border-slate-400'} rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 bg-slate-100 text-slate-900`} required />{formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}</div>
       </FormSection>
-      <FormSection title="Skill Assessment">
+      <FormSection title="Skill Interrogation">
         {SKILL_KEYS.map(key => (
             <SliderInput key={key} label={SKILL_DEFINITIONS[key].label} prompt={SKILL_DEFINITIONS[key].prompt} value={formData.scores[key]} onChange={value => handleChange('scores', { ...formData.scores, [key]: value })} />
         ))}
       </FormSection>
-      <FormSection title="Your Context">
-        <MultiSelect label="Preferred Workstyle" prompt="How do you prefer to create value? Select up to 3." options={WORKSTYLE_OPTIONS} selectedOptions={formData.workstyle} onChange={value => handleChange('workstyle', value)} maxSelection={3} />
+      <FormSection title="Field Context">
+        <MultiSelect label="Preferred Modus Operandi" prompt="How do you prefer to create value? Select up to 3." options={WORKSTYLE_OPTIONS} selectedOptions={formData.workstyle} onChange={value => handleChange('workstyle', value)} maxSelection={3} />
         {formErrors.workstyle && <p className="text-red-500 text-xs -mt-2 mb-2">{formErrors.workstyle}</p>}
         <div>
-          <label htmlFor="time_per_week_hours" className="block text-sm font-medium text-gray-800">Time Commitment</label>
-          <p className="text-sm text-gray-500 mt-1 mb-3">How many hours per week can you realistically dedicate?</p>
+          <label htmlFor="time_per_week_hours" className="block text-sm font-medium text-slate-800">Weekly Commitment</label>
+          <p className="text-sm text-slate-600 mt-1 mb-3">How many hours per week can you realistically dedicate to the operation?</p>
           <div className="flex items-center gap-4">
-            <input type="range" min="1" max="40" step="1" id="time_per_week_hours" value={formData.time_per_week_hours} onChange={e => handleChange('time_per_week_hours', parseInt(e.target.value, 10))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb" style={{ background: `linear-gradient(to right, #4f46e5 ${((formData.time_per_week_hours - 1) / 39) * 100}%, #e5e7eb ${((formData.time_per_week_hours - 1) / 39) * 100}%)` }} />
-            <span className="font-semibold text-indigo-600 w-16 text-center bg-indigo-50 rounded-md py-1">{formData.time_per_week_hours} hrs</span>
+            <input type="range" min="1" max="40" step="1" id="time_per_week_hours" value={formData.time_per_week_hours} onChange={e => handleChange('time_per_week_hours', parseInt(e.target.value, 10))} className="w-full h-2 bg-slate-300 rounded-lg appearance-none cursor-pointer slider-thumb" style={{ background: `linear-gradient(to right, #d97706 ${((formData.time_per_week_hours - 1) / 39) * 100}%, #d1d5db ${((formData.time_per_week_hours - 1) / 39) * 100}%)` }} />
+            <span className="font-semibold text-amber-800 w-16 text-center bg-amber-100 rounded-md py-1">{formData.time_per_week_hours} hrs</span>
           </div>
         </div>
-        <RadioGroup label="Budget Level" prompt="What's your monthly budget for tools, ads, or other expenses?" options={BUDGET_OPTIONS} selectedValue={formData.budget_level} onChange={value => handleChange('budget_level', value)} />
+        <RadioGroup label="Resource Allocation" prompt="What's your monthly budget for tools, ads, or other expenses?" options={BUDGET_OPTIONS} selectedValue={formData.budget_level} onChange={value => handleChange('budget_level', value)} />
         <div>
-          <label className="block text-sm font-medium text-gray-800">Age Bracket</label>
-          <p className="text-sm text-gray-500 mt-1 mb-3">Which age range do you fall into?</p>
+          <label className="block text-sm font-medium text-slate-800">Age Bracket</label>
+          <p className="text-sm text-slate-600 mt-1 mb-3">Which age range do you fall into?</p>
           <div className="flex flex-wrap gap-2">
             {AGE_BRACKET_OPTIONS.map(option => (
-              <button key={option} type="button" onClick={() => handleChange('age_bracket', option)} className={`px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ${formData.age_bracket === option ? 'bg-indigo-600 text-white ring-2 ring-offset-2 ring-indigo-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{option}</button>
+              <button key={option} type="button" onClick={() => handleChange('age_bracket', option)} className={`px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ${formData.age_bracket === option ? 'bg-amber-600 text-white ring-2 ring-offset-2 ring-amber-500' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>{option}</button>
             ))}
           </div>
         </div>
         <MultiSelect label="Target Markets" prompt="Who do you want to serve? Select all that apply." options={MARKET_OPTIONS} selectedOptions={formData.markets} onChange={value => handleChange('markets', value)} />
         {formErrors.markets && <p className="text-red-500 text-xs -mt-2 mb-2">{formErrors.markets}</p>}
         <div>
-          <label htmlFor="wildcards" className="block text-sm font-medium text-gray-800">Wildcards</label>
-          <p className="text-sm text-gray-500 mt-1 mb-3">List any unique skills, hobbies, or past experiences. (e.g., "former chef," "speak Japanese," "poker champion")</p>
-          <textarea id="wildcards" value={formData.wildcards} onChange={e => handleChange('wildcards', e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900" rows={3} placeholder="e.g., neuroscience background, stand-up comedy, blockchain expert..." />
+          <label htmlFor="wildcards" className="block text-sm font-medium text-slate-800">Wildcards</label>
+          <p className="text-sm text-slate-600 mt-1 mb-3">List any unique skills, hobbies, or past experiences. (e.g., "former chef," "speak Japanese," "poker champion")</p>
+          <textarea id="wildcards" value={formData.wildcards} onChange={e => handleChange('wildcards', e.target.value)} className="mt-1 block w-full px-3 py-2 border border-slate-400 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 bg-slate-100 text-slate-900" rows={3} placeholder="e.g., neuroscience background, stand-up comedy, blockchain expert..." />
         </div>
         <div>
-          <label htmlFor="constraints" className="block text-sm font-medium text-gray-800">Constraints & Guardrails</label>
-          <p className="text-sm text-gray-500 mt-1 mb-3">What do you want to avoid? (e.g., "no cold calling," "no complex software," "must be remote-friendly")</p>
-          <textarea id="constraints" value={formData.constraints} onChange={e => handleChange('constraints', e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900" rows={3} placeholder="e.g., no social media dancing, prefer async work, avoid healthcare topics..." />
+          <label htmlFor="constraints" className="block text-sm font-medium text-slate-800">Constraints & Guardrails</label>
+          <p className="text-sm text-slate-600 mt-1 mb-3">What do you want to avoid? (e.g., "no cold calling," "no complex software," "must be remote-friendly")</p>
+          <textarea id="constraints" value={formData.constraints} onChange={e => handleChange('constraints', e.target.value)} className="mt-1 block w-full px-3 py-2 border border-slate-400 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 bg-slate-100 text-slate-900" rows={3} placeholder="e.g., no social media dancing, prefer async work, avoid healthcare topics..." />
         </div>
       </FormSection>
-      <FormSection title="Consent & Submission">
+      <FormSection title="Final Authorization">
         <div className="flex items-start">
-          <div className="flex items-center h-5"><input id="consent" name="consent" type="checkbox" checked={formData.consent} onChange={e => handleChange('consent', e.target.checked)} className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded ${formErrors.consent ? 'border-red-500' : ''}`} /></div>
+          <div className="flex items-center h-5"><input id="consent" name="consent" type="checkbox" checked={formData.consent} onChange={e => handleChange('consent', e.target.checked)} className={`focus:ring-amber-500 h-4 w-4 text-amber-600 border-slate-400 rounded bg-slate-100 ${formErrors.consent ? 'border-red-500' : ''}`} /></div>
           <div className="ml-3 text-sm">
-            <label htmlFor="consent" className="font-medium text-gray-800">Agree to Terms</label>
-            <p className="text-gray-500">By checking this, you agree to receive emails and have your (anonymized) data used for research.</p>
+            <label htmlFor="consent" className="font-medium text-slate-800">Agree to Terms</label>
+            <p className="text-slate-600">By checking this, you agree to receive emails and have your (anonymized) data used for research.</p>
             {formErrors.consent && <p className="text-red-500 text-xs mt-1">{formErrors.consent}</p>}
           </div>
         </div>
       </FormSection>
       <div className="mt-8 text-center">
-        <button type="submit" className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400">
+        <button type="submit" className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:bg-slate-400">
           <SparklesIcon className="w-5 h-5 mr-2 -ml-1" /> Generate My Report
         </button>
       </div>
@@ -462,68 +466,68 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; }> = ({ repo
   };
 
   const ReportSection: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
-    <section className="mb-8 p-6 bg-white rounded-xl shadow-sm break-inside-avoid">
+    <section className="mb-8 p-6 bg-[#f5f1e8] rounded-xl shadow-sm break-inside-avoid border-2 border-slate-300">
       <div className="flex items-center mb-4">
-        <div className="bg-indigo-100 text-indigo-600 rounded-full p-2 mr-4">{icon}</div>
-        <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+        <div className="bg-amber-100 text-amber-700 rounded-full p-2 mr-4">{icon}</div>
+        <h3 className="font-heading text-2xl text-slate-900">{title}</h3>
       </div>
-      <div className="prose prose-indigo max-w-none">{children}</div>
+      <div className="text-slate-800 space-y-3">{children}</div>
     </section>
   );
 
   return (
-    <div className="p-4 sm:p-8 bg-gray-50">
+    <div className="p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <button onClick={onBack} className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">
+          <button onClick={onBack} className="inline-flex items-center text-sm font-medium text-slate-300 hover:text-amber-400 transition-colors">
             <BackIcon className="w-5 h-5 mr-2" /> Back to Form
           </button>
           <div className="flex gap-2">
-            <button onClick={() => setShowJson(prev => !prev)} className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            <button onClick={() => setShowJson(prev => !prev)} className="inline-flex items-center px-3 py-2 border border-slate-500 text-sm font-medium rounded-md text-slate-200 bg-slate-700 hover:bg-slate-600">
                 <JsonIcon className="w-5 h-5 mr-2" /> {showJson ? 'Hide' : 'Show'} JSON
             </button>
-            <button onClick={handleDownloadPdf} className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+            <button onClick={handleDownloadPdf} className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700">
                 <DownloadIcon className="w-5 h-5 mr-2" /> Download PDF
             </button>
           </div>
         </div>
         
         {showJson && (
-            <div className="mb-6 relative bg-gray-800 text-white p-4 rounded-lg text-sm font-mono overflow-x-auto">
-                <button onClick={() => copyToClipboard(report.jsonData, 'json')} className="absolute top-2 right-2 text-gray-300 hover:text-white">
+            <div className="mb-6 relative bg-slate-800 text-white p-4 rounded-lg text-sm font-mono overflow-x-auto border border-slate-600">
+                <button onClick={() => copyToClipboard(report.jsonData, 'json')} className="absolute top-2 right-2 text-slate-300 hover:text-white">
                     <CopyIcon className="w-5 h-5" />
                 </button>
                 <pre><code>{report.jsonData}</code></pre>
             </div>
         )}
 
-        <div ref={reportRef} className="p-8 bg-white rounded-lg shadow-lg report-content">
-          <header className="text-center pb-8 border-b border-gray-200 mb-8">
-            <div className="inline-block bg-indigo-100 p-3 rounded-full mb-4">
-              <SparklesIcon className="w-10 h-10 text-indigo-600" />
+        <div ref={reportRef} className="p-8 bg-[#f5f1e8] rounded-sm shadow-2xl report-content border-4 border-slate-700">
+          <header className="text-center pb-8 border-b-2 border-dashed border-slate-400 mb-8">
+            <div className="inline-block bg-amber-100 p-3 rounded-full mb-4 ring-4 ring-amber-200">
+              <SparklesIcon className="w-10 h-10 text-amber-700" />
             </div>
-            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">{report.personaTitle}</h1>
-            <h2 className="text-xl text-gray-500 mt-2">Your Persuasion Imagineering Report</h2>
+            <h1 className="font-heading text-5xl text-slate-900 tracking-wide">{report.personaTitle}</h1>
+            <h2 className="text-xl text-slate-600 mt-2">Persuasion Imagineering Case File</h2>
           </header>
 
           <main>
-            <ReportSection icon={<PersonaIcon className="w-6 h-6" />} title="Your AI-Era Identity">
+            <ReportSection icon={<PersonaIcon className="w-6 h-6" />} title="Subject Identity Profile">
               <p>{report.identityParagraph}</p>
             </ReportSection>
 
-            <ReportSection icon={<EdgeIcon className="w-6 h-6" />} title="Your Persuasive Edge">
+            <ReportSection icon={<EdgeIcon className="w-6 h-6" />} title="Persuasive Edge Analysis">
               <ul className="list-none p-0">
                 {report.topStrengths.map((s, i) => (
-                  <li key={i} className="mb-3"><strong>{s.strength}:</strong> {s.reason}</li>
+                  <li key={i} className="mb-3 text-slate-800"><strong className="text-slate-900">{s.strength}:</strong> {s.reason}</li>
                 ))}
               </ul>
             </ReportSection>
 
-            <ReportSection icon={<OpportunityIcon className="w-6 h-6" />} title="High-Leverage Opportunity Map">
+            <ReportSection icon={<OpportunityIcon className="w-6 h-6" />} title="High-Leverage Opportunities">
               <div className="space-y-6">
                 {report.opportunityMap.map((opp, i) => (
-                  <div key={i} className="p-4 border border-gray-200 rounded-lg bg-gray-50 break-inside-avoid">
-                    <h4 className="font-bold text-lg text-indigo-700">{opp.what}</h4>
+                  <div key={i} className="p-4 border border-slate-400 rounded-lg bg-slate-200/50 break-inside-avoid">
+                    <h4 className="font-heading text-lg text-amber-800">{opp.what}</h4>
                     <p><strong>Fit:</strong> {opp.whyFit}</p>
                     <p><strong>Audience:</strong> {opp.audience}</p>
                     <p><strong>Offer:</strong> {opp.offer}</p>
@@ -534,28 +538,28 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; }> = ({ repo
               </div>
             </ReportSection>
 
-            <ReportSection icon={<QuickWinsIcon className="w-6 h-6" />} title="Quick Wins (This Week)">
+            <ReportSection icon={<QuickWinsIcon className="w-6 h-6" />} title="Immediate Actions (This Week)">
               <ul className="list-disc pl-5 space-y-2">{report.quickWins.map((item, i) => <li key={i}>{item}</li>)}</ul>
             </ReportSection>
 
-            <ReportSection icon={<BuildPlanIcon className="w-6 h-6" />} title="90-Day Build Plan">
+            <ReportSection icon={<BuildPlanIcon className="w-6 h-6" />} title="90-Day Operations Plan">
               <ul className="list-disc pl-5 space-y-2">{report.buildPlan.map((item, i) => <li key={i}>{item}</li>)}</ul>
             </ReportSection>
 
-            <ReportSection icon={<GuardrailsIcon className="w-6 h-6" />} title="Guardrails & Pitfalls">
+            <ReportSection icon={<GuardrailsIcon className="w-6 h-6" />} title="Risks & Countermeasures">
                <ul className="list-disc pl-5 space-y-2">{report.guardrails.map((item, i) => <li key={i}>{item}</li>)}</ul>
             </ReportSection>
 
-            <ReportSection icon={<ToolsIcon className="w-6 h-6" />} title="Recommended Tech Stack">
+            <ReportSection icon={<ToolsIcon className="w-6 h-6" />} title="Recommended Arsenal">
               <ul className="list-disc pl-5 space-y-2">{report.tools.map((item, i) => <li key={i}>{item}</li>)}</ul>
             </ReportSection>
 
-            <ReportSection icon={<PromptsIcon className="w-6 h-6" />} title="Starter Prompts">
+            <ReportSection icon={<PromptsIcon className="w-6 h-6" />} title="AI Intelligence Briefings">
               {report.starterPrompts.map((p, i) => (
-                <div key={i} className="relative p-4 border border-gray-200 rounded-lg bg-gray-50 mb-4 break-inside-avoid">
-                  <h4 className="font-semibold text-gray-800">{p.title}</h4>
-                  <p className="text-sm text-gray-600 mt-1 font-mono whitespace-pre-wrap">{p.prompt}</p>
-                   <button onClick={() => copyToClipboard(p.prompt, `prompt-${i}`)} className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 rounded-md bg-white/50 backdrop-blur-sm transition">
+                <div key={i} className="relative p-4 border border-slate-400 rounded-lg bg-slate-200/50 mb-4 break-inside-avoid">
+                  <h4 className="font-semibold text-slate-800">{p.title}</h4>
+                  <p className="text-sm text-slate-700 mt-1 font-mono whitespace-pre-wrap">{p.prompt}</p>
+                   <button onClick={() => copyToClipboard(p.prompt, `prompt-${i}`)} className="absolute top-2 right-2 p-1 text-slate-500 hover:text-slate-800 rounded-md bg-white/50 backdrop-blur-sm transition">
                     {copiedStates[`prompt-${i}`] ? 'Copied!' : <CopyIcon className="w-5 h-5" />}
                   </button>
                 </div>
@@ -570,26 +574,26 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; }> = ({ repo
 
 // --- App State Components ---
 const PageLoader: React.FC<{ message: string }> = ({ message }) => (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-4">
-      <LogoIcon className="w-16 h-16 text-indigo-600 animate-pulse mb-4" />
-      <h2 className="text-xl font-semibold text-gray-800">{message}</h2>
-      <p className="text-gray-500 mt-2">Please wait a moment...</p>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-center p-4">
+      <LogoImage className="w-24 h-24 rounded-full shadow-lg mb-4 animate-pulse" />
+      <h2 className="font-heading text-xl text-slate-200">{message}</h2>
+      <p className="text-slate-400 mt-2">Reticulating splines...</p>
     </div>
 );
 
 const ApiKeyScreen: React.FC<{ onSelectKey: () => void }> = ({ onSelectKey }) => (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-6">
-        <div className="max-w-md bg-white p-8 rounded-xl shadow-lg">
-            <LogoIcon className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900">Welcome!</h2>
-            <p className="mt-2 text-gray-600">To generate your personalized report, this app needs access to the Gemini API. Please select an API key to continue.</p>
-            <p className="mt-4 text-sm text-gray-500">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-center p-6">
+        <div className="max-w-md bg-[#f5f1e8] p-8 rounded-sm shadow-2xl border-2 border-slate-600">
+            <LogoImage className="w-20 h-20 rounded-full shadow-lg mx-auto mb-4" />
+            <h2 className="font-heading text-2xl text-slate-900">Authorization Required</h2>
+            <p className="mt-2 text-slate-700">To generate your personalized report, this app needs access to the Gemini API. Please select an API key to continue.</p>
+            <p className="mt-4 text-sm text-slate-600">
                 You may need to have a Google Cloud project with the AI Platform API enabled.
-                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline ml-1">Learn more about billing.</a>
+                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-amber-700 hover:underline ml-1">Learn more about billing.</a>
             </p>
             <button
                 onClick={onSelectKey}
-                className="mt-6 w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="mt-6 w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
             >
                 Select API Key
             </button>
@@ -607,7 +611,7 @@ const App: React.FC = () => {
   const [checkingApiKey, setCheckingApiKey] = useState(true);
 
   useEffect(() => {
-    const initialize = async () => {
+    const initializeApp = async () => {
         if (window.aistudio) {
             try {
                 const hasKey = await window.aistudio.hasSelectedApiKey();
@@ -617,11 +621,11 @@ const App: React.FC = () => {
                 setApiKeyReady(false);
             }
         } else {
-            setApiKeyReady(true);
+            setApiKeyReady(true); // Assume ready in non-AI Studio environments
         }
         setCheckingApiKey(false);
     };
-    initialize();
+    initializeApp();
   }, []);
 
   const handleFormSubmit = async (formData: FormData) => {
@@ -668,32 +672,29 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen font-sans">
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <LogoIcon className="h-8 w-8 text-indigo-600" />
-            <h1 className="text-xl font-semibold text-gray-800">Persuasion Imagineering Diagnostic</h1>
-          </div>
-        </div>
+    <div className="bg-slate-900 min-h-screen">
+      <header className="py-6 px-4 text-center">
+        <LogoImage className="w-24 h-24 rounded-full shadow-lg mx-auto mb-4" />
+        <h1 className="font-heading text-4xl text-amber-400">Persuasion Imagineer</h1>
+        <p className="text-slate-400 mt-1">Your Personal Intelligence Agency</p>
       </header>
-      <main className="py-8">
+      <main className="pb-8">
         <div className="max-w-4xl mx-auto px-4">
           {isLoading && (
-            <div className="bg-white rounded-lg shadow-xl p-8 text-center">
-              <SparklesIcon className="w-12 h-12 text-indigo-600 mx-auto animate-spin mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900">Imagineering your results...</h2>
-              <p className="text-gray-600 mt-2">Analyzing your skills and mapping opportunities. This might take a moment.</p>
+            <div className="bg-[#f5f1e8] rounded-sm shadow-2xl border-4 border-slate-700 p-8 text-center">
+              <SparklesIcon className="w-12 h-12 text-amber-600 mx-auto animate-spin mb-4" />
+              <h2 className="font-heading text-3xl text-slate-900">Imagineering your results...</h2>
+              <p className="text-slate-600 mt-2">Analyzing your skills and mapping opportunities. This might take a moment.</p>
             </div>
           )}
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg shadow-md mb-6">
+            <div className="bg-red-900/50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-md mb-6">
               <div className="flex">
-                <div className="py-1"><svg className="h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg></div>
+                <div className="py-1"><svg className="h-6 w-6 text-red-400 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg></div>
                 <div>
-                  <h3 className="font-bold text-red-800">Error Generating Report</h3>
-                  <p className="text-sm text-red-700 mt-1">{error}</p>
-                   <button onClick={handleReset} className="mt-2 text-sm font-semibold text-red-800 hover:text-red-900">Try again</button>
+                  <h3 className="font-heading font-bold text-red-200">Error Generating Report</h3>
+                  <p className="text-sm text-red-300 mt-1">{error}</p>
+                   <button onClick={handleReset} className="mt-2 text-sm font-semibold text-red-200 hover:text-white">Try again</button>
                 </div>
               </div>
             </div>
@@ -704,13 +705,13 @@ const App: React.FC = () => {
           </div>
 
           <div className={`${report || isLoading || error ? 'hidden' : 'block'}`}>
-            <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+            <div className="bg-[#f5f1e8] rounded-sm shadow-2xl overflow-hidden border-4 border-slate-700">
                 <DiagnosticForm onSubmit={handleFormSubmit} />
             </div>
           </div>
         </div>
       </main>
-      <footer className="py-6 text-center text-sm text-gray-500">
+      <footer className="py-6 text-center text-sm text-slate-400">
         <p>&copy; {new Date().getFullYear()} Persuasion Imagineering. All rights reserved.</p>
       </footer>
     </div>

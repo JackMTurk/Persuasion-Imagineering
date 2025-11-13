@@ -1,7 +1,8 @@
 
+
 import express from 'express';
 import cors from 'cors';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Modality } from '@google/genai';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -14,10 +15,10 @@ const __dirname = path.dirname(__filename);
 
 // --- Middleware ---
 app.use(cors()); 
-app.use(express.json()); 
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '')));
 
-// --- The Secure API Endpoint ---
+// --- The Secure API Endpoint for Report Generation ---
 app.post('/api/generate', async (req, res) => {
   const apiKey = process.env.API_KEY;
 
@@ -66,7 +67,7 @@ app.post('/api/generate', async (req, res) => {
     res.json(reportData);
 
   } catch (error) {
-    console.error('Error calling Gemini API SDK:', error);
+    console.error('Error calling Gemini API SDK for text generation:', error);
     
     let errorMessage = 'An internal server error occurred.';
     if (error instanceof Error) {
