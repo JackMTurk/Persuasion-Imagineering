@@ -2,20 +2,13 @@ import React, { useState, useCallback, useRef, FormEvent, useEffect } from 'reac
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
 
-// FIX: Added AIStudio interface to resolve a conflicting global type declaration for 'window.aistudio'.
-// The error message indicated 'aistudio' should be of type 'AIStudio'. This change defines that type
-// and applies it to the window interface, resolving the conflict.
-interface AIStudio {
-    hasSelectedApiKey: () => Promise<boolean>;
-    openSelectKey: () => Promise<void>;
-}
-
 // --- Global Type Declarations ---
 declare global {
     interface Window {
         jspdf: any;
         html2canvas: any;
-        aistudio?: AIStudio;
+        // FIX: Removed conflicting declaration for window.aistudio.
+        // The error "Subsequent property declarations must have the same type" indicates a global type for this property already exists.
         process?: {
             env?: {
                 API_KEY?: string;
@@ -273,13 +266,6 @@ const postToEndpoint = async (url: string, data: object) => {
 };
 
 const generateReport = async (formData: FormData): Promise<Report> => {
-    const apiKey = window.process?.env?.API_KEY;
-    if (!apiKey) {
-        throw new Error("API Key is not configured. Please select an API key to proceed.");
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-    
     try {
         const normalizedScores = normalizeScores(formData.scores);
         const topSkills = identifyTopSkills(normalizedScores);
@@ -287,13 +273,24 @@ const generateReport = async (formData: FormData): Promise<Report> => {
         const systemInstruction = buildSystemInstruction();
         const userContent = buildUserContent(formData, persona, topSkills, normalizedScores);
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: { parts: [{ text: userContent }] },
-          config: { systemInstruction, responseMimeType: "application/json", responseSchema: reportSchema }
+        // This is the key change: call your own server endpoint, not Google's API
+        const apiResponse = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                formData: formData,
+                schema: reportSchema,
+                systemInstruction: systemInstruction,
+                userContent: userContent,
+            })
         });
 
-        const reportData = JSON.parse(response.text);
+        if (!apiResponse.ok) {
+            const errorData = await apiResponse.json().catch(() => ({ error: 'Failed to parse error response from server.' }));
+            throw new Error(errorData.error || `Request failed with status ${apiResponse.status}`);
+        }
+
+        const reportData = await apiResponse.json();
         
         const snapshot = {
             name: formData.name, email: formData.email, persona: reportData.personaTitle,
@@ -310,8 +307,8 @@ const generateReport = async (formData: FormData): Promise<Report> => {
         return finalReport;
     } catch (error) {
         console.error("Error generating report:", error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown API error occurred.';
-        throw new Error(`Failed to generate your report. This could be due to an invalid API key or a problem with the AI service. Please verify your API key and try again. (Original error: ${errorMessage})`);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        throw new Error(`Failed to generate your report. Please try again. (Details: ${errorMessage})`);
     }
 };
 
@@ -421,7 +418,6 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; }> = ({ repo
     }
     const reportElement = reportRef.current;
     
-    // Temporarily set a fixed width for rendering to ensure consistency
     const originalWidth = reportElement.style.width;
     reportElement.style.width = '1024px';
 
@@ -430,11 +426,13 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; }> = ({ repo
         useCORS: true,
         logging: true,
         onclone: (document) => {
-            // Restore original width in the clone for proper rendering
-            document.querySelector('.report-content')!.style.width = originalWidth;
+            const clonedReport = document.querySelector('.report-content');
+            if(clonedReport) {
+              (clonedReport as HTMLElement).style.width = '1024px';
+            }
         }
     }).then((canvas) => {
-      reportElement.style.width = originalWidth; // Restore original width
+      reportElement.style.width = originalWidth;
       const imgData = canvas.toDataURL('image/png');
       const pdf = new window.jspdf.jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -456,7 +454,7 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; }> = ({ repo
     }).catch(err => {
       console.error("PDF Generation failed:", err);
       alert("Sorry, there was an error generating the PDF.");
-      reportElement.style.width = originalWidth; // Ensure width is restored on error
+      reportElement.style.width = originalWidth;
     });
   };
 
@@ -579,42 +577,48 @@ const App: React.FC = () => {
   const [report, setReport] = useState<Report | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // This state management for API keys is no longer needed for the deployed app,
+  // but we'll leave it in place to maintain functionality within AI Studio.
   const [apiKeyReady, setApiKeyReady] = useState(false);
   const [checkingApiKey, setCheckingApiKey] = useState(true);
 
-  const checkApiKey = useCallback(async () => {
-    if (window.aistudio) {
-      try {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setApiKeyReady(hasKey);
-      } catch (e) {
-        console.error("Error checking API key:", e);
-        setApiKeyReady(false); // Assume no key if check fails
-      }
-    } else {
-        // If aistudio is not available, assume key is in environment for local dev
-        setApiKeyReady(true); 
-    }
-    setCheckingApiKey(false);
-  }, []);
-  
   useEffect(() => {
-    checkApiKey();
-  }, [checkApiKey]);
+    // In a deployed environment with a backend, the client doesn't need to check for a key.
+    // We assume the server is configured. For AI Studio, we keep the check.
+    const initialize = async () => {
+        if (window.aistudio) {
+            try {
+                const hasKey = await window.aistudio.hasSelectedApiKey();
+                setApiKeyReady(hasKey);
+            } catch (e) {
+                console.error("Error checking AI Studio key:", e);
+                setApiKeyReady(false);
+            }
+        } else {
+            // For deployed app, we don't need a key on the client.
+            setApiKeyReady(true);
+        }
+        setCheckingApiKey(false);
+    };
+    initialize();
+  }, []);
 
   const handleFormSubmit = async (formData: FormData) => {
     setIsLoading(true);
     setError(null);
     setReport(null);
     try {
+      // The logic to check for window.aistudio can be simplified. 
+      // If we are in AI Studio, it will use its injected key.
+      // If deployed, our new generateReport function will handle it.
+      
+      // We now call the simplified generateReport function which has the proxy logic.
       const result = await generateReport(formData);
       setReport(result);
       window.scrollTo(0, 0);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
-      if (err.message && (err.message.includes('API key') || err.message.includes('API_KEY'))) {
-          setApiKeyReady(false); // Prompt for key selection on API key errors
-      }
     } finally {
       setIsLoading(false);
     }
@@ -627,11 +631,11 @@ const App: React.FC = () => {
     window.scrollTo(0, 0);
   };
   
+  // This function is only for the AI Studio environment.
   const handleSelectKey = async () => {
     if (window.aistudio) {
         try {
             await window.aistudio.openSelectKey();
-            // Assume success and optimistically update UI
             setApiKeyReady(true); 
             setCheckingApiKey(false);
         } catch(e) {
@@ -648,6 +652,7 @@ const App: React.FC = () => {
     </div>
   );
 
+  // This screen will now only appear in the AI Studio environment if a key is not selected.
   const ApiKeyScreen = () => (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-6">
         <div className="max-w-md bg-white p-8 rounded-xl shadow-lg">
@@ -669,10 +674,11 @@ const App: React.FC = () => {
   );
 
   if (checkingApiKey) {
-    return <PageLoader message="Checking API Key status..." />;
+    return <PageLoader message="Initializing application..." />;
   }
   
-  if (!apiKeyReady && window.aistudio) {
+  if (!apiKeyReady) {
+    // This condition will be false in the deployed environment, skipping the ApiKeyScreen.
     return <ApiKeyScreen />;
   }
 

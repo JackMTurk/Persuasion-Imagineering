@@ -1,22 +1,15 @@
 {
-  "name": "persuasion-imagineering-skill-stack-diagnostic",
-  "private": true,
-  "version": "0.0.0",
+  "name": "persuasion-imagineering-server",
+  "version": "1.0.0",
+  "description": "Secure proxy for Gemini API",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "node server.js"
   },
   "dependencies": {
-    "react": "^19.2.0",
     "@google/genai": "^1.29.0",
-    "react-dom": "^19.2.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
   }
 }
