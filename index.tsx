@@ -590,9 +590,9 @@ const App: React.FC = () => {
             <div className="max-w-4xl mx-auto bg-white p-6 sm:p-8 md:p-12 rounded-lg shadow-2xl">
                 <header className="text-center border-b-2 border-gray-200 pb-6 mb-8">
                     <h1 className="font-heading text-3xl md:text-4xl text-gray-800">Create Your Own Manifesto & Plan for Building a Business Around Your Unique Skills as a Persuasion Imagineer</h1>
-                    <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Redefine yourself for the new era of AI - uncover your strengths, discover new markets, and get a step-by-step plan to turn what you do best into what the world needs most.</p>
+                    <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Uncover Your Strengths, Discover New Markets, And Get A Step-By-Step Plan To Turn What You Do Best Into What The World Needs Most.</p>
                     <div className="mt-6 text-left text-gray-700 max-w-2xl mx-auto">
-                      <p className="mb-4">This is your moment to redefine what’s possible as a Persuasion Imagineer — directing technology instead of being directed by it. In just minutes, you’ll uncover:</p>
+                      <p className="mb-4">The Persuasion Imagineering Manifesto & Plan is more than just another personality assessment — it’s your customized Roadmap to Reinvention. In just minutes, you’ll uncover:</p>
                       <ul className="list-none space-y-2">
                           <li className="flex items-start"><span className="text-indigo-500 font-bold mr-2">▶</span><span>A custom Persona showing how your unique blend of strategic, creative, technical, and emotional skills connects to real business opportunities.</span></li>
                           <li className="flex items-start"><span className="text-indigo-500 font-bold mr-2">▶</span><span>Clear directions for turning your strengths into specific offers, audiences, and revenue streams.</span></li>
@@ -606,7 +606,7 @@ const App: React.FC = () => {
 
                 <form onSubmit={handleSubmit}>
                     <section className="mb-10">
-                        <h3 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-6">Part 1: Your P.I. Skill Stack</h3>
+                        <h3 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-6">Skill Stack Rundown</h3>
                         {SKILL_KEYS.map(key => (
                             <SliderInput
                                 key={key}
@@ -620,7 +620,7 @@ const App: React.FC = () => {
                     </section>
 
                     <section className="mb-10">
-                        <h3 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-6">Part 2: Your Operating Context</h3>
+                        <h3 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-6">Lay Of The Land</h3>
                         
                         <MultiSelect
                           label="My Preferred Workstyle Is To... (select up to 3)"
@@ -738,8 +738,8 @@ const App: React.FC = () => {
                                  />
                             </div>
                             <div className="ml-3 text-sm">
-                                <label htmlFor="consent" className="font-medium text-gray-700">Acknowledge & Proceed</label>
-                                <p className="text-gray-500">I understand this AI tool is for informational purposes. By checking this box, I consent to receive my personalized report and occasional P.I. insights via email.</p>
+                                <label htmlFor="consent" className="font-medium text-gray-700">Keep My Data Off the Record</label>
+                                <p className="text-gray-500">Strictly confidential — NEVER shared — and used only to generate my Manifesto & Plan and send updates. I can unsubscribe anytime.</p>
                             </div>
                         </div>
                     </section>
