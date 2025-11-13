@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useRef, FormEvent, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type, Modality } from "@google/genai";
@@ -110,8 +109,8 @@ const PERSONA_MAP: { persona: string, skills: (keyof Scores)[] }[] = [
   { persona: 'Operator-Automator', skills: ['technical', 'communication'] }, { persona: 'Community Catalyst', skills: ['eq', 'strategy', 'communication'] },
 ];
 
-const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwGfWfFzCqH7I4T5b5lXoIq9kPzY_8Uo7oGjR6tC8jHjV-9sQ8wXyZ/exec";
 const AWEBER_ENDPOINT = "https://hook.us1.make.com/k71oy4mebyi2rhjukfe246y5nlcui6in";
+const GOOGLE_SHEET_ENDPOINT = "YOUR_GOOGLE_SHEET_APPS_SCRIPT_URL_HERE"; // <-- Replace this placeholder with your actual URL
 
 // --- Icon Components ---
 const LogoImage: React.FC<{ className?: string }> = ({ className }) => (
@@ -270,10 +269,10 @@ const buildUserContent = (formData: FormData, persona: string, topSkills: (keyof
 - Constraints: ${formData.constraints || 'None'}`;
 
 const postToEndpoint = async (url: string, data: object) => {
-    if (!url.includes('...')) {
+    if (url && !url.includes('...')) {
         try { await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); }
         catch (error) { console.error(`Error posting to ${url}:`, error); }
-    } else { console.warn(`Endpoint ${url} is a placeholder. Skipping POST.`); }
+    } else if (url) { console.warn(`Endpoint ${url} appears to be a placeholder. Skipping POST.`); }
 };
 
 const generateReport = async (formData: FormData): Promise<Report> => {
@@ -343,7 +342,20 @@ const DiagnosticForm: React.FC<{ onSubmit: (formData: FormData) => void; }> = ({
   
   return (
     <form onSubmit={handleSubmit} className="p-6 sm:p-10" noValidate>
-      <div className="text-center mb-8"><h2 className="font-heading text-4xl text-slate-900">Your Diagnostic Debriefing</h2><p className="mt-2 text-slate-600">Turn your scattered skills into a clear plan for value creation. Rate yourself honestly—your edge, not your ego.</p></div>
+      <div className="text-slate-800 mb-8">
+        <div className="text-center mb-10">
+            <h2 className="font-heading text-4xl text-slate-900">Your Roadmap To Reinvention</h2>
+        </div>
+        <p className="mb-6 text-slate-700">This is your moment to redefine what’s possible as a Persuasion Imagineer — directing technology instead of being directed by it. In just minutes, you’ll uncover:</p>
+        <ul className="space-y-4 list-disc list-inside mb-8 bg-amber-50 p-6 rounded-lg border border-amber-200 text-slate-800 shadow-inner">
+            <li>A custom <strong>Persona</strong> showing how your unique blend of strategic, creative, technical, and emotional skills connects to real business opportunities.</li>
+            <li>Clear directions for turning your strengths into specific <strong>offers, audiences, and revenue streams</strong>.</li>
+            <li><strong>Tools and technologies</strong> to amplify your work and extend your creative reach — without dulling your voice.</li>
+            <li>Your <strong>7-Day Action Sprint</strong> with simple, concrete steps to start building momentum right now.</li>
+            <li>Your <strong>31-Day Guide to Relentless Execution</strong>, taking your ideas week by week from insight to implementation.</li>
+        </ul>
+        <p className="font-semibold text-center text-slate-800">Your Manifesto & Plan will show you where to focus, what to build, and how to make your mark in the most exciting creative era in history.</p>
+    </div>
       <FormSection title="Case File Vitals">
         <div><label htmlFor="name" className="block text-sm font-medium text-slate-800">Name</label><input type="text" id="name" value={formData.name} onChange={e => handleChange('name', e.target.value)} className={`mt-1 block w-full px-3 py-2 border ${formErrors.name ? 'border-red-500' : 'border-slate-400'} rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 bg-slate-100 text-slate-900`} required />{formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}</div>
         <div><label htmlFor="email" className="block text-sm font-medium text-slate-800">Email</label><input type="email" id="email" value={formData.email} onChange={e => handleChange('email', e.target.value)} className={`mt-1 block w-full px-3 py-2 border ${formErrors.email ? 'border-red-500' : 'border-slate-400'} rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 bg-slate-100 text-slate-900`} required />{formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}</div>
@@ -388,13 +400,15 @@ const DiagnosticForm: React.FC<{ onSubmit: (formData: FormData) => void; }> = ({
         </div>
       </FormSection>
       <FormSection title="Final Authorization">
-        <div className="flex items-start">
-          <div className="flex items-center h-5"><input id="consent" name="consent" type="checkbox" checked={formData.consent} onChange={e => handleChange('consent', e.target.checked)} className={`focus:ring-amber-500 h-4 w-4 text-amber-600 border-slate-400 rounded bg-slate-100 ${formErrors.consent ? 'border-red-500' : ''}`} /></div>
-          <div className="ml-3 text-sm">
-            <label htmlFor="consent" className="font-medium text-slate-800">Agree to Terms</label>
-            <p className="text-slate-600">By checking this, you agree to receive emails and have your (anonymized) data used for research.</p>
-            {formErrors.consent && <p className="text-red-500 text-xs mt-1">{formErrors.consent}</p>}
-          </div>
+        <div className="space-y-4">
+            <div className="flex items-start pt-2">
+              <div className="flex items-center h-5"><input id="consent" name="consent" type="checkbox" checked={formData.consent} onChange={e => handleChange('consent', e.target.checked)} className={`focus:ring-amber-500 h-4 w-4 text-amber-600 border-slate-400 rounded bg-slate-100 ${formErrors.consent ? 'border-red-500' : ''}`} /></div>
+              <div className="ml-3 text-sm">
+                <label htmlFor="consent" className="font-medium text-slate-800">Agree to Terms</label>
+                <p className="text-slate-600">By checking this, you agree to receive emails and have your (anonymized) data used for research.</p>
+                {formErrors.consent && <p className="text-red-500 text-xs mt-1">{formErrors.consent}</p>}
+              </div>
+            </div>
         </div>
       </FormSection>
       <div className="mt-8 text-center">
@@ -675,8 +689,8 @@ const App: React.FC = () => {
     <div className="bg-slate-900 min-h-screen">
       <header className="py-6 px-4 text-center">
         <LogoImage className="w-24 h-24 rounded-full shadow-lg mx-auto mb-4" />
-        <h1 className="font-heading text-4xl text-amber-400">Persuasion Imagineer</h1>
-        <p className="text-slate-400 mt-1">Your Personal Intelligence Agency</p>
+        <h1 className="font-heading text-3xl text-amber-400 max-w-3xl mx-auto">Create Your Own Manifesto & Plan for Building a Business Around Your Unique Skills as a Persuasion Imagineer</h1>
+        <p className="text-lg text-slate-400 mt-4 max-w-3xl mx-auto">Redefine yourself for the new era of AI - uncover your strengths, discover new markets, and get a step-by-step plan to turn what you do best into what the world needs most.</p>
       </header>
       <main className="pb-8">
         <div className="max-w-4xl mx-auto px-4">
