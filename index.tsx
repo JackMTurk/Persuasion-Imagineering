@@ -3,17 +3,15 @@ import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
 
 // --- Global Type Declarations ---
-// FIX: Defined the AIStudio interface to provide strong typing for window.aistudio, resolving the TypeScript error.
-interface AIStudio {
-  hasSelectedApiKey: () => Promise<boolean>;
-  openSelectKey: () => Promise<void>;
-}
-
+// FIX: Inlined the AIStudio interface within the global Window interface to resolve a TypeScript error about duplicate or conflicting declarations of 'aistudio'.
 declare global {
     interface Window {
         jspdf: any;
         html2canvas: any;
-        aistudio: AIStudio;
+        aistudio: {
+          hasSelectedApiKey: () => Promise<boolean>;
+          openSelectKey: () => Promise<void>;
+        };
         process?: {
             env?: {
                 API_KEY?: string;
@@ -207,6 +205,10 @@ const RadioGroup = <T extends string>({ label, prompt, options, selectedValue, o
   </div>
 );
 
+const FormSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+    <div className="border-t border-gray-200 pt-6 mt-6"><h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3><div className="space-y-4">{children}</div></div>
+);
+
 // --- Gemini Service ---
 const reportSchema = {
   type: Type.OBJECT,
@@ -335,10 +337,6 @@ const DiagnosticForm: React.FC<{ onSubmit: (formData: FormData) => void; }> = ({
 
   const handleSubmit = (e: FormEvent) => { e.preventDefault(); if (validateForm()) onSubmit(formData); };
   
-  const FormSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="border-t border-gray-200 pt-6 mt-6"><h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3><div className="space-y-4">{children}</div></div>
-  );
-
   return (
     <form onSubmit={handleSubmit} className="p-6 sm:p-10" noValidate>
       <div className="text-center mb-8"><h2 className="text-2xl font-bold text-gray-900">Discover Your AI-Era Persona</h2><p className="mt-2 text-gray-600">Turn your scattered skills into a clear plan for value creation. Rate yourself honestly—your edge, not your ego.</p></div>
@@ -570,6 +568,34 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; }> = ({ repo
   );
 };
 
+// --- App State Components ---
+const PageLoader: React.FC<{ message: string }> = ({ message }) => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-4">
+      <LogoIcon className="w-16 h-16 text-indigo-600 animate-pulse mb-4" />
+      <h2 className="text-xl font-semibold text-gray-800">{message}</h2>
+      <p className="text-gray-500 mt-2">Please wait a moment...</p>
+    </div>
+);
+
+const ApiKeyScreen: React.FC<{ onSelectKey: () => void }> = ({ onSelectKey }) => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-6">
+        <div className="max-w-md bg-white p-8 rounded-xl shadow-lg">
+            <LogoIcon className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900">Welcome!</h2>
+            <p className="mt-2 text-gray-600">To generate your personalized report, this app needs access to the Gemini API. Please select an API key to continue.</p>
+            <p className="mt-4 text-sm text-gray-500">
+                You may need to have a Google Cloud project with the AI Platform API enabled.
+                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline ml-1">Learn more about billing.</a>
+            </p>
+            <button
+                onClick={onSelectKey}
+                className="mt-6 w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+                Select API Key
+            </button>
+        </div>
+    </div>
+);
 
 // --- Main App Component ---
 const App: React.FC = () => {
@@ -633,40 +659,12 @@ const App: React.FC = () => {
     }
   }
 
-  const PageLoader: React.FC<{ message: string }> = ({ message }) => (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-4">
-      <LogoIcon className="w-16 h-16 text-indigo-600 animate-pulse mb-4" />
-      <h2 className="text-xl font-semibold text-gray-800">{message}</h2>
-      <p className="text-gray-500 mt-2">Please wait a moment...</p>
-    </div>
-  );
-
-  const ApiKeyScreen = () => (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-6">
-        <div className="max-w-md bg-white p-8 rounded-xl shadow-lg">
-            <LogoIcon className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900">Welcome!</h2>
-            <p className="mt-2 text-gray-600">To generate your personalized report, this app needs access to the Gemini API. Please select an API key to continue.</p>
-            <p className="mt-4 text-sm text-gray-500">
-                You may need to have a Google Cloud project with the AI Platform API enabled.
-                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline ml-1">Learn more about billing.</a>
-            </p>
-            <button
-                onClick={handleSelectKey}
-                className="mt-6 w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-                Select API Key
-            </button>
-        </div>
-    </div>
-  );
-
   if (checkingApiKey) {
     return <PageLoader message="Initializing application..." />;
   }
   
   if (!apiKeyReady) {
-    return <ApiKeyScreen />;
+    return <ApiKeyScreen onSelectKey={handleSelectKey} />;
   }
 
   return (
