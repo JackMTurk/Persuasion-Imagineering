@@ -1,7 +1,7 @@
 
 import express from 'express';
 import cors from 'cors';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,17 +13,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // --- Middleware ---
-// Allow requests from any origin, which is fine for this public-facing app
 app.use(cors()); 
-// Allow the server to read JSON from request bodies
 app.use(express.json()); 
-// Serve the static frontend files (index.html, index.tsx, etc.) from the root directory
 app.use(express.static(path.join(__dirname, '')));
 
 // --- The Secure API Endpoint ---
-// The frontend will call this endpoint instead of Google's API directly.
 app.post('/api/generate', async (req, res) => {
-  // Securely access the API key from Render's environment variables
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
@@ -31,7 +26,6 @@ app.post('/api/generate', async (req, res) => {
     return res.status(500).json({ error: 'API key is not configured on the server. Deployment is missing the API_KEY environment variable.' });
   }
 
-  // Extract the data sent from the frontend
   const { formData, schema, systemInstruction, userContent } = req.body;
 
   if (!formData || !schema || !systemInstruction || !userContent) {
@@ -41,26 +35,57 @@ app.post('/api/generate', async (req, res) => {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    // Make the call to the Gemini API on behalf of the client
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: { parts: [{ text: userContent }] },
       config: { systemInstruction, responseMimeType: "application/json", responseSchema: schema }
     });
     
-    // The response text is a JSON string, so we parse it before sending.
-    const reportData = JSON.parse(response.text);
+    if (response.promptFeedback?.blockReason) {
+        const blockReason = response.promptFeedback.blockReason;
+        const safetyRatings = JSON.stringify(response.promptFeedback.safetyRatings);
+        console.error(`Gemini API blocked the prompt. Reason: ${blockReason}. Ratings: ${safetyRatings}`);
+        return res.status(500).json({ error: `The AI service blocked the request due to content safety policies. Reason: ${blockReason}. Please modify your input and try again.` });
+    }
 
-    // Send the successful response from Gemini back to the frontend
+    const responseText = response.text;
+
+    if (!responseText) {
+      console.error('Gemini API returned an empty response without a specific block reason. Full response:', JSON.stringify(response, null, 2));
+      return res.status(500).json({ error: 'The AI service returned an empty response. This may be due to a content safety filter. Please check your inputs.' });
+    }
+
+    let reportData;
+    try {
+      reportData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse JSON from Gemini response. Raw response:', responseText);
+      return res.status(500).json({ error: 'The AI service returned a malformed response that was not valid JSON. This is an internal error.' });
+    }
+
     res.json(reportData);
 
   } catch (error) {
-    console.error('Error calling Gemini API:', error);
-    res.status(500).json({ error: 'An error occurred while communicating with the AI service.' });
+    console.error('Error calling Gemini API SDK:', error);
+    
+    let errorMessage = 'An internal server error occurred.';
+    if (error instanceof Error) {
+        errorMessage = error.message;
+        if (errorMessage.includes('API key not valid')) {
+            errorMessage = 'The API key configured on the server is invalid. Please check the Render environment variables.';
+        } else if (errorMessage.includes('permission denied')) {
+            errorMessage = 'The API key is missing necessary permissions, or the Google AI Platform API is not enabled on your Google Cloud project.';
+        } else if (errorMessage.includes('billing')) {
+            errorMessage = 'There is a billing issue with your Google Cloud project. Please ensure billing is enabled.';
+        }
+    }
+    
+    res.status(500).json({ 
+        error: `An error occurred while communicating with the AI service. Details: ${errorMessage}` 
+    });
   }
 });
 
-// A catch-all route to serve the index.html for any non-API routes, which helps with client-side routing.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });

@@ -3,12 +3,17 @@ import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
 
 // --- Global Type Declarations ---
+// FIX: Defined the AIStudio interface to provide strong typing for window.aistudio, resolving the TypeScript error.
+interface AIStudio {
+  hasSelectedApiKey: () => Promise<boolean>;
+  openSelectKey: () => Promise<void>;
+}
+
 declare global {
     interface Window {
         jspdf: any;
         html2canvas: any;
-        // FIX: Removed conflicting declaration for window.aistudio.
-        // The error "Subsequent property declarations must have the same type" indicates a global type for this property already exists.
+        aistudio: AIStudio;
         process?: {
             env?: {
                 API_KEY?: string;
@@ -266,50 +271,44 @@ const postToEndpoint = async (url: string, data: object) => {
 };
 
 const generateReport = async (formData: FormData): Promise<Report> => {
-    try {
-        const normalizedScores = normalizeScores(formData.scores);
-        const topSkills = identifyTopSkills(normalizedScores);
-        const persona = determinePersona(topSkills);
-        const systemInstruction = buildSystemInstruction();
-        const userContent = buildUserContent(formData, persona, topSkills, normalizedScores);
+    const normalizedScores = normalizeScores(formData.scores);
+    const topSkills = identifyTopSkills(normalizedScores);
+    const persona = determinePersona(topSkills);
+    const systemInstruction = buildSystemInstruction();
+    const userContent = buildUserContent(formData, persona, topSkills, normalizedScores);
 
-        // This is the key change: call your own server endpoint, not Google's API
-        const apiResponse = await fetch('/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                formData: formData,
-                schema: reportSchema,
-                systemInstruction: systemInstruction,
-                userContent: userContent,
-            })
-        });
+    const apiResponse = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            formData: formData,
+            schema: reportSchema,
+            systemInstruction: systemInstruction,
+            userContent: userContent,
+        })
+    });
 
-        if (!apiResponse.ok) {
-            const errorData = await apiResponse.json().catch(() => ({ error: 'Failed to parse error response from server.' }));
-            throw new Error(errorData.error || `Request failed with status ${apiResponse.status}`);
-        }
-
-        const reportData = await apiResponse.json();
-        
-        const snapshot = {
-            name: formData.name, email: formData.email, persona: reportData.personaTitle,
-            strengths: topSkills, markets: formData.markets, scores: normalizedScores, consent: formData.consent,
-        };
-
-        const finalReport = { ...reportData, jsonData: JSON.stringify(snapshot, null, 2) };
-
-        if (formData.consent) {
-            postToEndpoint(GOOGLE_SHEET_ENDPOINT, snapshot);
-            postToEndpoint(AWEBER_ENDPOINT, { email: formData.email, name: formData.name });
-        }
-        
-        return finalReport;
-    } catch (error) {
-        console.error("Error generating report:", error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-        throw new Error(`Failed to generate your report. Please try again. (Details: ${errorMessage})`);
+    if (!apiResponse.ok) {
+        const errorData = await apiResponse.json().catch(() => ({ error: 'Failed to parse error response from server.' }));
+        // Directly throw the detailed error message from the server.
+        throw new Error(errorData.error || `Request failed with status ${apiResponse.status}`);
     }
+
+    const reportData = await apiResponse.json();
+    
+    const snapshot = {
+        name: formData.name, email: formData.email, persona: reportData.personaTitle,
+        strengths: topSkills, markets: formData.markets, scores: normalizedScores, consent: formData.consent,
+    };
+
+    const finalReport = { ...reportData, jsonData: JSON.stringify(snapshot, null, 2) };
+
+    if (formData.consent) {
+        postToEndpoint(GOOGLE_SHEET_ENDPOINT, snapshot);
+        postToEndpoint(AWEBER_ENDPOINT, { email: formData.email, name: formData.name });
+    }
+    
+    return finalReport;
 };
 
 // --- Form Component ---
@@ -578,14 +577,10 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // This state management for API keys is no longer needed for the deployed app,
-  // but we'll leave it in place to maintain functionality within AI Studio.
   const [apiKeyReady, setApiKeyReady] = useState(false);
   const [checkingApiKey, setCheckingApiKey] = useState(true);
 
   useEffect(() => {
-    // In a deployed environment with a backend, the client doesn't need to check for a key.
-    // We assume the server is configured. For AI Studio, we keep the check.
     const initialize = async () => {
         if (window.aistudio) {
             try {
@@ -596,7 +591,6 @@ const App: React.FC = () => {
                 setApiKeyReady(false);
             }
         } else {
-            // For deployed app, we don't need a key on the client.
             setApiKeyReady(true);
         }
         setCheckingApiKey(false);
@@ -609,16 +603,12 @@ const App: React.FC = () => {
     setError(null);
     setReport(null);
     try {
-      // The logic to check for window.aistudio can be simplified. 
-      // If we are in AI Studio, it will use its injected key.
-      // If deployed, our new generateReport function will handle it.
-      
-      // We now call the simplified generateReport function which has the proxy logic.
       const result = await generateReport(formData);
       setReport(result);
       window.scrollTo(0, 0);
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred.');
+      const detailedMessage = err.message || 'An unexpected error occurred.';
+      setError(`Failed to generate your report. Please try again. (Details: ${detailedMessage})`);
     } finally {
       setIsLoading(false);
     }
@@ -631,7 +621,6 @@ const App: React.FC = () => {
     window.scrollTo(0, 0);
   };
   
-  // This function is only for the AI Studio environment.
   const handleSelectKey = async () => {
     if (window.aistudio) {
         try {
@@ -652,7 +641,6 @@ const App: React.FC = () => {
     </div>
   );
 
-  // This screen will now only appear in the AI Studio environment if a key is not selected.
   const ApiKeyScreen = () => (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-6">
         <div className="max-w-md bg-white p-8 rounded-xl shadow-lg">
@@ -678,7 +666,6 @@ const App: React.FC = () => {
   }
   
   if (!apiKeyReady) {
-    // This condition will be false in the deployed environment, skipping the ApiKeyScreen.
     return <ApiKeyScreen />;
   }
 
