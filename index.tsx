@@ -1,12 +1,26 @@
-import React, { useState, useCallback, useRef, FormEvent } from 'react';
+import React, { useState, useCallback, useRef, FormEvent, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
+
+// FIX: Added AIStudio interface to resolve a conflicting global type declaration for 'window.aistudio'.
+// The error message indicated 'aistudio' should be of type 'AIStudio'. This change defines that type
+// and applies it to the window interface, resolving the conflict.
+interface AIStudio {
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
+}
 
 // --- Global Type Declarations ---
 declare global {
     interface Window {
         jspdf: any;
         html2canvas: any;
+        aistudio?: AIStudio;
+        process?: {
+            env?: {
+                API_KEY?: string;
+            }
+        }
     }
 }
 
@@ -96,7 +110,7 @@ const PERSONA_MAP: { persona: string, skills: (keyof Scores)[] }[] = [
   { persona: 'Operator-Automator', skills: ['technical', 'communication'] }, { persona: 'Community Catalyst', skills: ['eq', 'strategy', 'communication'] },
 ];
 
-const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycby.../exec";
+const GOOGLE_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwGfWfFzCqH7I4T5b5lXoIq9kPzY_8Uo7oGjR6tC8jHjV-9sQ8wXyZ/exec";
 const AWEBER_ENDPOINT = "https://hook.us1.make.com/k71oy4mebyi2rhjukfe246y5nlcui6in";
 
 // --- Icon Components ---
@@ -259,12 +273,9 @@ const postToEndpoint = async (url: string, data: object) => {
 };
 
 const generateReport = async (formData: FormData): Promise<Report> => {
-    // Safely access the API key from the environment.
-    // This uses optional chaining to prevent a "process is not defined" crash.
-    const apiKey = (window as any).process?.env?.API_KEY;
+    const apiKey = window.process?.env?.API_KEY;
     if (!apiKey) {
-        // Provide a clear, user-friendly error if the API key is not configured.
-        throw new Error("API Key is not configured. Please ensure it's set up in your environment before generating the report.");
+        throw new Error("API Key is not configured. Please select an API key to proceed.");
     }
 
     const ai = new GoogleGenAI({ apiKey });
@@ -300,7 +311,6 @@ const generateReport = async (formData: FormData): Promise<Report> => {
     } catch (error) {
         console.error("Error generating report:", error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown API error occurred.';
-        // The error is re-thrown to be caught by the App component's state handler.
         throw new Error(`Failed to generate your report. This could be due to an invalid API key or a problem with the AI service. Please verify your API key and try again. (Original error: ${errorMessage})`);
     }
 };
@@ -339,150 +349,383 @@ const DiagnosticForm: React.FC<{ onSubmit: (formData: FormData) => void; }> = ({
       <FormSection title="Basic Info">
         <div><label htmlFor="name" className="block text-sm font-medium text-gray-800">Name</label><input type="text" id="name" value={formData.name} onChange={e => handleChange('name', e.target.value)} className={`mt-1 block w-full px-3 py-2 border ${formErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900`} required />{formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}</div>
         <div><label htmlFor="email" className="block text-sm font-medium text-gray-800">Email</label><input type="email" id="email" value={formData.email} onChange={e => handleChange('email', e.target.value)} className={`mt-1 block w-full px-3 py-2 border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900`} required />{formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}</div>
-        <div className="flex items-start"><div className="flex items-center h-5"><input id="consent" name="consent" type="checkbox" checked={formData.consent} onChange={e => handleChange('consent', e.target.checked)} className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 ${formErrors.consent ? 'border-red-500' : 'border-gray-300'} rounded`} /></div><div className="ml-3 text-sm"><label htmlFor="consent" className="font-medium text-gray-700">I agree to have my responses stored for research and follow-up.</label></div></div>{formErrors.consent && <p className="text-red-500 text-xs mt-1">{formErrors.consent}</p>}
       </FormSection>
-      <FormSection title="Core Skill Ratings">{SKILL_KEYS.map(key => <SliderInput key={key} label={SKILL_DEFINITIONS[key].label} prompt={SKILL_DEFINITIONS[key].prompt} value={formData.scores[key]} onChange={value => handleChange('scores', { ...formData.scores, [key]: value })} />)}</FormSection>
-      <FormSection title="Workstyle & Intent">
-        <MultiSelect label="Energizing Roles" prompt="Which roles energize you most? (pick up to 2)" options={WORKSTYLE_OPTIONS} selectedOptions={formData.workstyle} onChange={value => handleChange('workstyle', value)} maxSelection={2} />{formErrors.workstyle && <p className="text-red-500 text-xs mt-1">{formErrors.workstyle}</p>}
-        <div><label htmlFor="time" className="block text-sm font-medium text-gray-800 mb-1">Time Investment</label><p className="text-sm text-gray-500 mt-1 mb-3">How many hours per week can you realistically invest?</p><input type="number" id="time" value={formData.time_per_week_hours} onChange={e => handleChange('time_per_week_hours', Math.max(1, parseInt(e.target.value, 10)) || 1)} min="1" max="100" className="mt-1 block w-full sm:w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900" /></div>
-        <RadioGroup label="Budget" prompt="Available budget to invest in tools or marketing?" options={BUDGET_OPTIONS} selectedValue={formData.budget_level} onChange={value => handleChange('budget_level', value)} />
-        <div><label htmlFor="age" className="block text-sm font-medium text-gray-800">Age Bracket</label><p className="text-sm text-gray-500 mt-1 mb-3">Your age bracket (for realism filters).</p><select id="age" value={formData.age_bracket} onChange={e => handleChange('age_bracket', e.target.value as any)} className="mt-1 block w-full sm:w-1/2 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white text-gray-900">{AGE_BRACKET_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}</select></div>
-        <MultiSelect label="Preferred Markets" prompt="Preferred markets to serve (pick up to 3)" options={MARKET_OPTIONS} selectedOptions={formData.markets} onChange={value => handleChange('markets', value)} maxSelection={3} />{formErrors.markets && <p className="text-red-500 text-xs mt-1">{formErrors.markets}</p>}
+      <FormSection title="Skill Assessment">
+        {SKILL_KEYS.map(key => (
+            <SliderInput key={key} label={SKILL_DEFINITIONS[key].label} prompt={SKILL_DEFINITIONS[key].prompt} value={formData.scores[key]} onChange={value => handleChange('scores', { ...formData.scores, [key]: value })} />
+        ))}
       </FormSection>
-      <FormSection title="Wildcards & Personal Dimensions">
-        <div><label htmlFor="wildcards" className="block text-sm font-medium text-gray-800">Unusual Skills & Interests</label><p className="text-sm text-gray-500 mt-1 mb-3">List any unusual skills that shape how you work (hobbies, past careers, stage experience, crafts, sports fandom, etc.).</p><textarea id="wildcards" value={formData.wildcards} onChange={e => handleChange('wildcards', e.target.value)} rows={3} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900"></textarea></div>
-        <div><label htmlFor="constraints" className="block text-sm font-medium text-gray-800">Constraints (Optional)</label><p className="text-sm text-gray-500 mt-1 mb-3">Anything limiting your choices (mobility, equipment, geography, health)?</p><input type="text" id="constraints" value={formData.constraints} onChange={e => handleChange('constraints', e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900" /></div>
+      <FormSection title="Your Context">
+        <MultiSelect label="Preferred Workstyle" prompt="How do you prefer to create value? Select up to 3." options={WORKSTYLE_OPTIONS} selectedOptions={formData.workstyle} onChange={value => handleChange('workstyle', value)} maxSelection={3} />
+        {formErrors.workstyle && <p className="text-red-500 text-xs -mt-2 mb-2">{formErrors.workstyle}</p>}
+        <div>
+          <label htmlFor="time_per_week_hours" className="block text-sm font-medium text-gray-800">Time Commitment</label>
+          <p className="text-sm text-gray-500 mt-1 mb-3">How many hours per week can you realistically dedicate?</p>
+          <div className="flex items-center gap-4">
+            <input type="range" min="1" max="40" step="1" id="time_per_week_hours" value={formData.time_per_week_hours} onChange={e => handleChange('time_per_week_hours', parseInt(e.target.value, 10))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb" style={{ background: `linear-gradient(to right, #4f46e5 ${((formData.time_per_week_hours - 1) / 39) * 100}%, #e5e7eb ${((formData.time_per_week_hours - 1) / 39) * 100}%)` }} />
+            <span className="font-semibold text-indigo-600 w-16 text-center bg-indigo-50 rounded-md py-1">{formData.time_per_week_hours} hrs</span>
+          </div>
+        </div>
+        <RadioGroup label="Budget Level" prompt="What's your monthly budget for tools, ads, or other expenses?" options={BUDGET_OPTIONS} selectedValue={formData.budget_level} onChange={value => handleChange('budget_level', value)} />
+        <div>
+          <label className="block text-sm font-medium text-gray-800">Age Bracket</label>
+          <p className="text-sm text-gray-500 mt-1 mb-3">Which age range do you fall into?</p>
+          <div className="flex flex-wrap gap-2">
+            {AGE_BRACKET_OPTIONS.map(option => (
+              <button key={option} type="button" onClick={() => handleChange('age_bracket', option)} className={`px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ${formData.age_bracket === option ? 'bg-indigo-600 text-white ring-2 ring-offset-2 ring-indigo-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{option}</button>
+            ))}
+          </div>
+        </div>
+        <MultiSelect label="Target Markets" prompt="Who do you want to serve? Select all that apply." options={MARKET_OPTIONS} selectedOptions={formData.markets} onChange={value => handleChange('markets', value)} />
+        {formErrors.markets && <p className="text-red-500 text-xs -mt-2 mb-2">{formErrors.markets}</p>}
+        <div>
+          <label htmlFor="wildcards" className="block text-sm font-medium text-gray-800">Wildcards</label>
+          <p className="text-sm text-gray-500 mt-1 mb-3">List any unique skills, hobbies, or past experiences. (e.g., "former chef," "speak Japanese," "poker champion")</p>
+          <textarea id="wildcards" value={formData.wildcards} onChange={e => handleChange('wildcards', e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900" rows={3} placeholder="e.g., neuroscience background, stand-up comedy, blockchain expert..." />
+        </div>
+        <div>
+          <label htmlFor="constraints" className="block text-sm font-medium text-gray-800">Constraints & Guardrails</label>
+          <p className="text-sm text-gray-500 mt-1 mb-3">What do you want to avoid? (e.g., "no cold calling," "no complex software," "must be remote-friendly")</p>
+          <textarea id="constraints" value={formData.constraints} onChange={e => handleChange('constraints', e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900" rows={3} placeholder="e.g., no social media dancing, prefer async work, avoid healthcare topics..." />
+        </div>
       </FormSection>
-      <div className="mt-10 pt-6 border-t border-gray-200"><button type="submit" className="w-full flex items-center justify-center gap-2 px-6 py-4 border border-transparent text-base font-medium rounded-xl text-white bg-indigo-600 shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105"><SparklesIcon className="h-6 w-6" />Generate My Renaissance Map</button></div>
+      <FormSection title="Consent & Submission">
+        <div className="flex items-start">
+          <div className="flex items-center h-5"><input id="consent" name="consent" type="checkbox" checked={formData.consent} onChange={e => handleChange('consent', e.target.checked)} className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded ${formErrors.consent ? 'border-red-500' : ''}`} /></div>
+          <div className="ml-3 text-sm">
+            <label htmlFor="consent" className="font-medium text-gray-800">Agree to Terms</label>
+            <p className="text-gray-500">By checking this, you agree to receive emails and have your (anonymized) data used for research.</p>
+            {formErrors.consent && <p className="text-red-500 text-xs mt-1">{formErrors.consent}</p>}
+          </div>
+        </div>
+      </FormSection>
+      <div className="mt-8 text-center">
+        <button type="submit" className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400">
+          <SparklesIcon className="w-5 h-5 mr-2 -ml-1" /> Generate My Report
+        </button>
+      </div>
     </form>
   );
 };
 
-// --- Report Component ---
-const ReportDisplay: React.FC<{ report: Report; onReset: () => void; }> = ({ report, onReset }) => {
-    const reportRef = useRef<HTMLDivElement>(null);
-    const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
-    const [showJson, setShowJson] = useState(false);
+// --- Report Display Component ---
+const ReportDisplay: React.FC<{ report: Report; onBack: () => void; }> = ({ report, onBack }) => {
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [showJson, setShowJson] = useState(false);
+  const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({});
 
-    const copyToClipboard = useCallback(() => {
-        if (!reportRef.current) return;
-        const reportText = Array.from(reportRef.current.querySelectorAll('.report-section-content')).map((el: Element) => {
-            const title = el.querySelector('h3, h1')?.textContent || '';
-            const content = Array.from(el.querySelectorAll('p, li')).map(item => item.textContent).join('\n');
-            return `${title}\n${content}\n`;
-        }).join('\n\n');
-        navigator.clipboard.writeText(reportText).then(() => { setCopyStatus('copied'); setTimeout(() => setCopyStatus('idle'), 2000); });
-    }, [report]);
+  const handleDownloadPdf = () => {
+    if (!reportRef.current || !window.html2canvas || !window.jspdf) {
+      alert("PDF generation library is not available.");
+      return;
+    }
+    const reportElement = reportRef.current;
+    
+    // Temporarily set a fixed width for rendering to ensure consistency
+    const originalWidth = reportElement.style.width;
+    reportElement.style.width = '1024px';
 
-    const downloadAsPdf = useCallback(() => {
-        const input = reportRef.current;
-        if (!input || !window.jspdf || !window.html2canvas) return;
-        const { jsPDF } = window.jspdf;
-        window.html2canvas(input, { scale: 2 }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            const ratio = pdfWidth / canvasWidth;
-            const totalPdfHeight = canvasHeight * ratio;
-            let position = 0;
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, totalPdfHeight);
-            let heightLeft = totalPdfHeight - pdfHeight;
-            while (heightLeft > 0) {
-                position -= pdfHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, totalPdfHeight);
-                heightLeft -= pdfHeight;
-            }
-            pdf.save('Persuasion_Imagineering_Report.pdf');
-        });
-    }, []);
+    window.html2canvas(reportElement, {
+        scale: 2,
+        useCORS: true,
+        logging: true,
+        onclone: (document) => {
+            // Restore original width in the clone for proper rendering
+            document.querySelector('.report-content')!.style.width = originalWidth;
+        }
+    }).then((canvas) => {
+      reportElement.style.width = originalWidth; // Restore original width
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new window.jspdf.jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const imgProps= pdf.getImageProperties(imgData);
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      let heightLeft = pdfHeight;
+      let position = 0;
 
-    const ReportSection: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; }> = ({ title, icon, children }) => (
-        <div className="py-6 border-b border-gray-200 last:border-b-0 report-section-content">
-            <div className="flex items-center gap-3 mb-4"><div className="flex-shrink-0">{icon}</div><h3 className="text-xl font-bold text-gray-800">{title}</h3></div>
-            <div className="pl-10 space-y-4 text-gray-700">{children}</div>
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pdf.internal.pageSize.getHeight();
+
+      while (heightLeft >= 0) {
+        position = heightLeft - pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pdf.internal.pageSize.getHeight();
+      }
+      pdf.save(`${report.personaTitle.replace(/\s+/g, '-')}-Report.pdf`);
+    }).catch(err => {
+      console.error("PDF Generation failed:", err);
+      alert("Sorry, there was an error generating the PDF.");
+      reportElement.style.width = originalWidth; // Ensure width is restored on error
+    });
+  };
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedStates(prev => ({ ...prev, [id]: true }));
+    setTimeout(() => setCopiedStates(prev => ({ ...prev, [id]: false })), 2000);
+  };
+
+  const ReportSection: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
+    <section className="mb-8 p-6 bg-white rounded-xl shadow-sm break-inside-avoid">
+      <div className="flex items-center mb-4">
+        <div className="bg-indigo-100 text-indigo-600 rounded-full p-2 mr-4">{icon}</div>
+        <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+      </div>
+      <div className="prose prose-indigo max-w-none">{children}</div>
+    </section>
+  );
+
+  return (
+    <div className="p-4 sm:p-8 bg-gray-50">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <button onClick={onBack} className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">
+            <BackIcon className="w-5 h-5 mr-2" /> Back to Form
+          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setShowJson(prev => !prev)} className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <JsonIcon className="w-5 h-5 mr-2" /> {showJson ? 'Hide' : 'Show'} JSON
+            </button>
+            <button onClick={handleDownloadPdf} className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                <DownloadIcon className="w-5 h-5 mr-2" /> Download PDF
+            </button>
+          </div>
         </div>
-    );
+        
+        {showJson && (
+            <div className="mb-6 relative bg-gray-800 text-white p-4 rounded-lg text-sm font-mono overflow-x-auto">
+                <button onClick={() => copyToClipboard(report.jsonData, 'json')} className="absolute top-2 right-2 text-gray-300 hover:text-white">
+                    <CopyIcon className="w-5 h-5" />
+                </button>
+                <pre><code>{report.jsonData}</code></pre>
+            </div>
+        )}
 
-    return (
-        <div className="p-6 sm:p-10">
-            <div className="flex justify-between items-center mb-6">
-                <button onClick={onReset} className="flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800"><BackIcon className="h-5 w-5" /> Start Over</button>
-                <div className="flex items-center gap-2">
-                    <button onClick={copyToClipboard} className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center gap-2"><CopyIcon className="h-4 w-4" /> {copyStatus === 'copied' ? 'Copied!' : 'Copy'}</button>
-                    <button onClick={downloadAsPdf} className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center gap-2"><DownloadIcon className="h-4 w-4" /> Download PDF</button>
-                </div>
+        <div ref={reportRef} className="p-8 bg-white rounded-lg shadow-lg report-content">
+          <header className="text-center pb-8 border-b border-gray-200 mb-8">
+            <div className="inline-block bg-indigo-100 p-3 rounded-full mb-4">
+              <SparklesIcon className="w-10 h-10 text-indigo-600" />
             </div>
-            <div ref={reportRef} className="report-container bg-white">
-                <div className="text-center py-6 border-b border-gray-200 report-section-content">
-                    <PersonaIcon className="h-16 w-16 mx-auto text-indigo-500 mb-4" />
-                    <h2 className="text-sm font-semibold text-indigo-600 uppercase tracking-wider">You Are:</h2>
-                    <h1 className="text-4xl font-extrabold text-gray-900 mt-1">{report.personaTitle}</h1>
-                    <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-600">{report.identityParagraph}</p>
+            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">{report.personaTitle}</h1>
+            <h2 className="text-xl text-gray-500 mt-2">Your Persuasion Imagineering Report</h2>
+          </header>
+
+          <main>
+            <ReportSection icon={<PersonaIcon className="w-6 h-6" />} title="Your AI-Era Identity">
+              <p>{report.identityParagraph}</p>
+            </ReportSection>
+
+            <ReportSection icon={<EdgeIcon className="w-6 h-6" />} title="Your Persuasive Edge">
+              <ul className="list-none p-0">
+                {report.topStrengths.map((s, i) => (
+                  <li key={i} className="mb-3"><strong>{s.strength}:</strong> {s.reason}</li>
+                ))}
+              </ul>
+            </ReportSection>
+
+            <ReportSection icon={<OpportunityIcon className="w-6 h-6" />} title="High-Leverage Opportunity Map">
+              <div className="space-y-6">
+                {report.opportunityMap.map((opp, i) => (
+                  <div key={i} className="p-4 border border-gray-200 rounded-lg bg-gray-50 break-inside-avoid">
+                    <h4 className="font-bold text-lg text-indigo-700">{opp.what}</h4>
+                    <p><strong>Fit:</strong> {opp.whyFit}</p>
+                    <p><strong>Audience:</strong> {opp.audience}</p>
+                    <p><strong>Offer:</strong> {opp.offer}</p>
+                    <p><strong>Channel:</strong> {opp.channel}</p>
+                    <p><strong>Speed Plan:</strong> {opp.speedPlan}</p>
+                  </div>
+                ))}
+              </div>
+            </ReportSection>
+
+            <ReportSection icon={<QuickWinsIcon className="w-6 h-6" />} title="Quick Wins (This Week)">
+              <ul className="list-disc pl-5 space-y-2">{report.quickWins.map((item, i) => <li key={i}>{item}</li>)}</ul>
+            </ReportSection>
+
+            <ReportSection icon={<BuildPlanIcon className="w-6 h-6" />} title="90-Day Build Plan">
+              <ul className="list-disc pl-5 space-y-2">{report.buildPlan.map((item, i) => <li key={i}>{item}</li>)}</ul>
+            </ReportSection>
+
+            <ReportSection icon={<GuardrailsIcon className="w-6 h-6" />} title="Guardrails & Pitfalls">
+               <ul className="list-disc pl-5 space-y-2">{report.guardrails.map((item, i) => <li key={i}>{item}</li>)}</ul>
+            </ReportSection>
+
+            <ReportSection icon={<ToolsIcon className="w-6 h-6" />} title="Recommended Tech Stack">
+              <ul className="list-disc pl-5 space-y-2">{report.tools.map((item, i) => <li key={i}>{item}</li>)}</ul>
+            </ReportSection>
+
+            <ReportSection icon={<PromptsIcon className="w-6 h-6" />} title="Starter Prompts">
+              {report.starterPrompts.map((p, i) => (
+                <div key={i} className="relative p-4 border border-gray-200 rounded-lg bg-gray-50 mb-4 break-inside-avoid">
+                  <h4 className="font-semibold text-gray-800">{p.title}</h4>
+                  <p className="text-sm text-gray-600 mt-1 font-mono whitespace-pre-wrap">{p.prompt}</p>
+                   <button onClick={() => copyToClipboard(p.prompt, `prompt-${i}`)} className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 rounded-md bg-white/50 backdrop-blur-sm transition">
+                    {copiedStates[`prompt-${i}`] ? 'Copied!' : <CopyIcon className="w-5 h-5" />}
+                  </button>
                 </div>
-                <ReportSection title="Your Edge (Top 3 Strength Zones)" icon={<EdgeIcon className="h-7 w-7 text-green-500" />}><ul className="list-none space-y-3">{report.topStrengths.map((s, i) => <li key={i}><p className="font-semibold text-gray-800">{s.strength}</p><p className="text-gray-600">{s.reason}</p></li>)}</ul></ReportSection>
-                <ReportSection title="Opportunity Map (3-5 ideas)" icon={<OpportunityIcon className="h-7 w-7 text-blue-500" />}><div className="space-y-8">{report.opportunityMap.map((opp, i) => (<div key={i} className="bg-gray-50 p-4 rounded-lg"><h4 className="font-bold text-lg text-gray-900">{opp.what}</h4><ul className="mt-3 space-y-2 text-sm"><li><strong>Why You Fit:</strong> {opp.whyFit}</li><li><strong>Audience:</strong> {opp.audience}</li><li><strong>Offer:</strong> {opp.offer}</li><li><strong>Channel:</strong> {opp.channel}</li><li><strong>Speed Plan:</strong> {opp.speedPlan}</li></ul></div>))}</div></ReportSection>
-                <div className="grid md:grid-cols-2 gap-x-8">
-                    <ReportSection title="Quick Wins (Next 7-14 days)" icon={<QuickWinsIcon className="h-7 w-7 text-yellow-500" />}><ul className="list-disc list-inside space-y-1">{report.quickWins.map((win, i) => <li key={i}>{win}</li>)}</ul></ReportSection>
-                    <ReportSection title="30-Day Build Plan" icon={<BuildPlanIcon className="h-7 w-7 text-teal-500" />}><ul className="list-disc list-inside space-y-1">{report.buildPlan.map((step, i) => <li key={i}>{step}</li>)}</ul></ReportSection>
-                    {/* Fix: Changed closing tag from </TReportSection> to </ReportSection> */}
-                    <ReportSection title="Guardrails (Not Worth Your Time)" icon={<GuardrailsIcon className="h-7 w-7 text-red-500" />}><ul className="list-disc list-inside space-y-1">{report.guardrails.map((g, i) => <li key={i}>{g}</li>)}</ul></ReportSection>
-                    <ReportSection title="Tools to Explore" icon={<ToolsIcon className="h-7 w-7 text-purple-500" />}><p>{report.tools.join(' • ')}</p></ReportSection>
-                </div>
-                <ReportSection title="Starter Prompts" icon={<PromptsIcon className="h-7 w-7 text-orange-500" />}>{report.starterPrompts.map((p, i) => (<div key={i} className="bg-gray-800 text-white p-4 rounded-lg font-mono text-sm"><h5 className="font-bold mb-2 text-gray-300">{p.title}</h5><p className="whitespace-pre-wrap">{p.prompt}</p></div>))}</ReportSection>
-            </div>
-            <div className="mt-6">
-                <button onClick={() => setShowJson(!showJson)} className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-800"><JsonIcon className="h-5 w-5" />{showJson ? 'Hide' : 'Show'} Data Snapshot</button>
-                {showJson && <pre className="mt-2 bg-gray-900 text-white p-4 rounded-lg text-xs overflow-x-auto"><code>{report.jsonData}</code></pre>}
-            </div>
+              ))}
+            </ReportSection>
+          </main>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
+
 
 // --- Main App Component ---
 const App: React.FC = () => {
   const [report, setReport] = useState<Report | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [apiKeyReady, setApiKeyReady] = useState(false);
+  const [checkingApiKey, setCheckingApiKey] = useState(true);
 
-  const handleFormSubmit = useCallback(async (formData: FormData) => {
-    setIsLoading(true); setError(null); setReport(null);
-    try { setReport(await generateReport(formData)); } 
-    catch (e) { setError(e instanceof Error ? e.message : 'An unknown error occurred.'); } 
-    finally { setIsLoading(false); }
+  const checkApiKey = useCallback(async () => {
+    if (window.aistudio) {
+      try {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        setApiKeyReady(hasKey);
+      } catch (e) {
+        console.error("Error checking API key:", e);
+        setApiKeyReady(false); // Assume no key if check fails
+      }
+    } else {
+        // If aistudio is not available, assume key is in environment for local dev
+        setApiKeyReady(true); 
+    }
+    setCheckingApiKey(false);
   }, []);
+  
+  useEffect(() => {
+    checkApiKey();
+  }, [checkApiKey]);
 
-  const handleReset = () => { setReport(null); setError(null); setIsLoading(false); };
+  const handleFormSubmit = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    setReport(null);
+    try {
+      const result = await generateReport(formData);
+      setReport(result);
+      window.scrollTo(0, 0);
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+      if (err.message && (err.message.includes('API key') || err.message.includes('API_KEY'))) {
+          setApiKeyReady(false); // Prompt for key selection on API key errors
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setReport(null);
+    setError(null);
+    setIsLoading(false);
+    window.scrollTo(0, 0);
+  };
+  
+  const handleSelectKey = async () => {
+    if (window.aistudio) {
+        try {
+            await window.aistudio.openSelectKey();
+            // Assume success and optimistically update UI
+            setApiKeyReady(true); 
+            setCheckingApiKey(false);
+        } catch(e) {
+            console.error("Failed to open select key dialog", e);
+        }
+    }
+  }
+
+  const PageLoader: React.FC<{ message: string }> = ({ message }) => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-4">
+      <LogoIcon className="w-16 h-16 text-indigo-600 animate-pulse mb-4" />
+      <h2 className="text-xl font-semibold text-gray-800">{message}</h2>
+      <p className="text-gray-500 mt-2">Please wait a moment...</p>
+    </div>
+  );
+
+  const ApiKeyScreen = () => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-6">
+        <div className="max-w-md bg-white p-8 rounded-xl shadow-lg">
+            <LogoIcon className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900">Welcome!</h2>
+            <p className="mt-2 text-gray-600">To generate your personalized report, this app needs access to the Gemini API. Please select an API key to continue.</p>
+            <p className="mt-4 text-sm text-gray-500">
+                You may need to have a Google Cloud project with the AI Platform API enabled.
+                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline ml-1">Learn more about billing.</a>
+            </p>
+            <button
+                onClick={handleSelectKey}
+                className="mt-6 w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+                Select API Key
+            </button>
+        </div>
+    </div>
+  );
+
+  if (checkingApiKey) {
+    return <PageLoader message="Checking API Key status..." />;
+  }
+  
+  if (!apiKeyReady && window.aistudio) {
+    return <ApiKeyScreen />;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center p-4 sm:p-6 lg:p-8 font-sans text-gray-800">
-      <header className="w-full max-w-4xl mx-auto text-center mb-8">
-        <div className="flex items-center justify-center gap-3 mb-2"><LogoIcon className="h-10 w-10 text-indigo-600" /><h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">Persuasion Imagineering</h1></div>
-        <p className="text-lg text-gray-600">Skill Stack Diagnostic</p>
-      </header>
-      <main className="w-full max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg transition-all duration-500">
-          {isLoading ? (
-            <div className="p-12 text-center"><SparklesIcon className="h-12 w-12 text-indigo-500 mx-auto animate-pulse" /><h2 className="mt-4 text-2xl font-semibold text-gray-700">Generating Your Renaissance Map...</h2><p className="mt-2 text-gray-500">The Imagineer is analyzing your skills and crafting your opportunities. This may take a moment.</p></div>
-          ) : error ? (
-            <div className="p-12 text-center"><h2 className="text-2xl font-semibold text-red-600">An Error Occurred</h2><p className="mt-2 text-gray-600">{error}</p><button onClick={handleReset} className="mt-6 px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Try Again</button></div>
-          ) : report ? (
-            <ReportDisplay report={report} onReset={handleReset} />
-          ) : (
-            <DiagnosticForm onSubmit={handleFormSubmit} />
-          )}
+    <div className="bg-gray-50 min-h-screen font-sans">
+      <header className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <LogoIcon className="h-8 w-8 text-indigo-600" />
+            <h1 className="text-xl font-semibold text-gray-800">Persuasion Imagineering Diagnostic</h1>
+          </div>
         </div>
-        <footer className="text-center mt-8 text-sm text-gray-500"><p>&copy; {new Date().getFullYear()} Persuasion Imagineering. All Rights Reserved.</p></footer>
+      </header>
+      <main className="py-8">
+        <div className="max-w-4xl mx-auto px-4">
+          {isLoading && (
+            <div className="bg-white rounded-lg shadow-xl p-8 text-center">
+              <SparklesIcon className="w-12 h-12 text-indigo-600 mx-auto animate-spin mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900">Imagineering your results...</h2>
+              <p className="text-gray-600 mt-2">Analyzing your skills and mapping opportunities. This might take a moment.</p>
+            </div>
+          )}
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg shadow-md mb-6">
+              <div className="flex">
+                <div className="py-1"><svg className="h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg></div>
+                <div>
+                  <h3 className="font-bold text-red-800">Error Generating Report</h3>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                   <button onClick={handleReset} className="mt-2 text-sm font-semibold text-red-800 hover:text-red-900">Try again</button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className={`${report ? 'block' : 'hidden'}`}>
+            {report && <ReportDisplay report={report} onBack={handleReset} />}
+          </div>
+
+          <div className={`${report || isLoading || error ? 'hidden' : 'block'}`}>
+            <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+                <DiagnosticForm onSubmit={handleFormSubmit} />
+            </div>
+          </div>
+        </div>
       </main>
+      <footer className="py-6 text-center text-sm text-gray-500">
+        <p>&copy; {new Date().getFullYear()} Persuasion Imagineering. All rights reserved.</p>
+      </footer>
     </div>
   );
 };
 
-// --- App Initialization ---
-const rootElement = document.getElementById('root');
-if (!rootElement) throw new Error("Could not find root element to mount to");
-const root = ReactDOM.createRoot(rootElement);
+// --- Render App ---
+const root = ReactDOM.createRoot(document.getElementById('root')!);
 root.render(<React.StrictMode><App /></React.StrictMode>);
