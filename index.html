@@ -25,6 +25,25 @@
     <title>Jack Turk, P.I. - Persuasion Imagineer</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'noir-bg': '#f5f5dc',
+              'noir-paper': '#fefdf6',
+              'noir-text': '#2c3e50',
+              'noir-text-secondary': '#704214',
+              'noir-accent': '#d4af37',
+              'noir-accent-hover': '#b89b2e',
+              'noir-red': '#8b0000',
+              'noir-green': '#013220',
+              'noir-border': '#d1c7b8',
+            }
+          }
+        }
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Special+Elite&display=swap" rel="stylesheet">
@@ -37,6 +56,27 @@
       }
       .font-heading {
         font-family: 'Special Elite', monospace;
+      }
+      /* Custom styles for range input thumb */
+      input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        background: #d4af37; /* noir-accent */
+        border: 2px solid #fefdf6; /* noir-paper */
+        border-radius: 50%;
+        cursor: pointer;
+        margin-top: -7px; /* Adjust to center */
+      }
+
+      input[type=range]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: #d4af37; /* noir-accent */
+        border: 2px solid #fefdf6; /* noir-paper */
+        border-radius: 50%;
+        cursor: pointer;
       }
     </style>
 

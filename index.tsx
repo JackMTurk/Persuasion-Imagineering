@@ -141,8 +141,8 @@ const determinePersona = (scores: Scores): string => {
 
 const SliderInput: React.FC<{ name: keyof Scores; label: string; value: number; onChange: (name: keyof Scores, value: number) => void; prompt: string }> = ({ name, label, value, onChange, prompt }) => (
   <div className="mb-6">
-    <label htmlFor={name} className="block text-lg font-medium text-gray-800 mb-2">{label}</label>
-    <p className="text-sm text-gray-600 italic mb-3">{prompt}</p>
+    <label htmlFor={name} className="block text-lg font-medium text-noir-text mb-2">{label}</label>
+    <p className="text-sm text-noir-text-secondary italic mb-3">{prompt}</p>
     <input
       id={name}
       type="range"
@@ -150,11 +150,11 @@ const SliderInput: React.FC<{ name: keyof Scores; label: string; value: number; 
       max="10"
       value={value}
       onChange={(e) => onChange(name, parseInt(e.target.value))}
-      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+      className="w-full h-2 bg-noir-border rounded-lg appearance-none cursor-pointer"
     />
-    <div className="flex justify-between text-xs text-gray-500 mt-1">
+    <div className="flex justify-between text-xs text-noir-text-secondary mt-1">
       <span>Less Confident</span>
-      <span className="font-bold text-indigo-600 text-base">{value}</span>
+      <span className="font-bold text-noir-green text-base">{value}</span>
       <span>More Confident</span>
     </div>
   </div>
@@ -174,7 +174,7 @@ const MultiSelect: React.FC<{ options: string[]; selected: string[]; onChange: (
 
   return (
     <div className="mb-6">
-      <label className="block text-lg font-medium text-gray-800 mb-2">{label}</label>
+      <label className="block text-lg font-medium text-noir-text mb-2">{label}</label>
       <div className="flex flex-wrap gap-2">
         {options.map(option => (
           <button
@@ -183,22 +183,22 @@ const MultiSelect: React.FC<{ options: string[]; selected: string[]; onChange: (
             onClick={() => handleSelect(option)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               selected.includes(option)
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-noir-accent text-noir-paper shadow-md'
+                : 'bg-noir-border text-noir-text hover:bg-opacity-80'
             }`}
           >
             {option}
           </button>
         ))}
       </div>
-       <p className="text-xs text-gray-500 mt-2">Select up to {maxSelection}.</p>
+       <p className="text-xs text-noir-text-secondary mt-2">Select up to {maxSelection}.</p>
     </div>
   );
 };
 
 const RadioGroup: React.FC<{ name: string; options: {value: string, label: string}[]; selected: string; onChange: (value: string) => void; label: string;}> = ({ name, options, selected, onChange, label }) => (
     <div className="mb-6">
-        <label className="block text-lg font-medium text-gray-800 mb-2">{label}</label>
+        <label className="block text-lg font-medium text-noir-text mb-2">{label}</label>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
             {options.map(({ value, label: optionLabel }) => (
                 <label key={value} className="flex items-center space-x-2 cursor-pointer">
@@ -208,9 +208,9 @@ const RadioGroup: React.FC<{ name: string; options: {value: string, label: strin
                         value={value}
                         checked={selected === value}
                         onChange={(e) => onChange(e.target.value)}
-                        className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                        className="h-4 w-4 text-noir-accent border-noir-border focus:ring-noir-accent"
                     />
-                    <span className="text-gray-700">{optionLabel}</span>
+                    <span className="text-noir-text">{optionLabel}</span>
                 </label>
             ))}
         </div>
@@ -227,7 +227,7 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; formData: Fo
         if (!reportElement) return;
 
         try {
-            const canvas = await window.html2canvas(reportElement, { scale: 2 });
+            const canvas = await window.html2canvas(reportElement, { scale: 2, backgroundColor: '#fefdf6' });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -258,125 +258,127 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; formData: Fo
 
 
     return (
-        <div className="bg-white p-6 sm:p-8 md:p-12 rounded-lg shadow-2xl">
-            <div ref={reportRef} className="report-content p-8">
-                 <header className="text-center border-b-2 border-gray-200 pb-6 mb-8">
-                    <h1 className="font-heading text-4xl md:text-5xl text-gray-800">Your Persuasion Imagineering Report</h1>
-                    <p className="text-lg text-gray-600 mt-2">Prepared for: {formData.name}</p>
-                    <p className="font-heading text-2xl text-indigo-600 mt-4">Your Persona: {persona}</p>
-                </header>
+        <div className="bg-noir-bg min-h-screen p-4 sm:p-6 md:p-8">
+          <div className="max-w-4xl mx-auto bg-noir-paper p-6 sm:p-8 md:p-12 rounded-lg shadow-2xl">
+              <div ref={reportRef} className="report-content p-8">
+                   <header className="text-center border-b-2 border-noir-border pb-6 mb-8">
+                      <h1 className="font-heading text-4xl md:text-5xl text-noir-text">Your Persuasion Imagineering Report</h1>
+                      <p className="text-lg text-noir-text-secondary mt-2">Prepared for: {formData.name}</p>
+                      <p className="font-heading text-2xl text-noir-green mt-4">Your Persona: {persona}</p>
+                  </header>
 
-                <main>
-                    <section className="mb-10">
-                         <h2 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-4 flex items-center gap-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-1.026.977-2.206.977-3.454a5.002 5.002 0 00-4.476-4.972M6.363 18.243A13.973 13.973 0 015 14.25a5.002 5.002 0 014.476-4.972M12 11v-1a4 4 0 00-4-4H6.363" /> </svg>
-                            <span>Your P.I. Identity</span>
-                         </h2>
-                         <p className="text-gray-700 leading-relaxed">{report.identityParagraph}</p>
-                    </section>
+                  <main>
+                      <section className="mb-10">
+                           <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-1.026.977-2.206.977-3.454a5.002 5.002 0 00-4.476-4.972M6.363 18.243A13.973 13.973 0 015 14.25a5.002 5.002 0 014.476-4.972M12 11v-1a4 4 0 00-4-4H6.363" /> </svg>
+                              <span>Your P.I. Identity</span>
+                           </h2>
+                           <p className="text-noir-text-secondary leading-relaxed">{report.identityParagraph}</p>
+                      </section>
 
-                    <section className="mb-10">
-                        <h2 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-4 flex items-center gap-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.05 10.1c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /> </svg>
-                            <span>Your Top Strengths</span>
-                        </h2>
-                        <ul className="space-y-4">
-                            {report.topStrengths.map((item, index) => (
-                                <li key={index} className="p-4 bg-indigo-50 rounded-lg">
-                                    <h3 className="font-bold text-indigo-800">{item.strength}</h3>
-                                    <p className="text-gray-700">{item.reason}</p>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
+                      <section className="mb-10">
+                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.05 10.1c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /> </svg>
+                              <span>Your Top Strengths</span>
+                          </h2>
+                          <ul className="space-y-4">
+                              {report.topStrengths.map((item, index) => (
+                                  <li key={index} className="p-4 bg-noir-accent bg-opacity-10 rounded-lg">
+                                      <h3 className="font-bold text-noir-green">{item.strength}</h3>
+                                      <p className="text-noir-text-secondary">{item.reason}</p>
+                                  </li>
+                              ))}
+                          </ul>
+                      </section>
 
-                    <section className="mb-10">
-                        <h2 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-4 flex items-center gap-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 16.382V5.618a1 1 0 00-1.447-.894L15 7m-6 13l6-3m0 0V7" /> </svg>
-                            <span>Your Opportunity Map</span>
-                        </h2>
-                        <div className="space-y-6">
-                           {report.opportunityMap.map((opp, index) => (
-                                <div key={index} className="p-4 border border-gray-200 rounded-lg shadow-sm">
-                                    <h3 className="font-heading text-xl text-indigo-700 mb-2">{opp.what}</h3>
-                                    <p className="mb-3"><strong className="font-medium text-gray-700">Why It's a Fit:</strong> {opp.whyFit}</p>
-                                    <p><strong className="font-medium text-gray-700">Audience:</strong> {opp.audience}</p>
-                                    <p><strong className="font-medium text-gray-700">Offer:</strong> {opp.offer}</p>
-                                    <p><strong className="font-medium text-gray-700">Channel:</strong> {opp.channel}</p>
-                                    <div className="mt-4 p-3 bg-green-50 rounded">
-                                        <h4 className="font-bold text-green-800">30-Day Speed Plan:</h4>
-                                        <p className="text-gray-700">{opp.speedPlan}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+                      <section className="mb-10">
+                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 16.382V5.618a1 1 0 00-1.447-.894L15 7m-6 13l6-3m0 0V7" /> </svg>
+                              <span>Your Opportunity Map</span>
+                          </h2>
+                          <div className="space-y-6">
+                             {report.opportunityMap.map((opp, index) => (
+                                  <div key={index} className="p-4 border border-noir-border rounded-lg shadow-sm">
+                                      <h3 className="font-heading text-xl text-noir-green mb-2">{opp.what}</h3>
+                                      <p className="mb-3"><strong className="font-medium text-noir-text">Why It's a Fit:</strong> <span className="text-noir-text-secondary">{opp.whyFit}</span></p>
+                                      <p><strong className="font-medium text-noir-text">Audience:</strong> <span className="text-noir-text-secondary">{opp.audience}</span></p>
+                                      <p><strong className="font-medium text-noir-text">Offer:</strong> <span className="text-noir-text-secondary">{opp.offer}</span></p>
+                                      <p><strong className="font-medium text-noir-text">Channel:</strong> <span className="text-noir-text-secondary">{opp.channel}</span></p>
+                                      <div className="mt-4 p-3 bg-noir-green bg-opacity-10 rounded">
+                                          <h4 className="font-bold text-noir-green">30-Day Speed Plan:</h4>
+                                          <p className="text-noir-text-secondary">{opp.speedPlan}</p>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                      </section>
 
-                    <div className="grid md:grid-cols-2 gap-10 mb-10">
-                        <section>
-                            <h2 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-4 flex items-center gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /> </svg>
-                                <span>Quick Wins (This Week)</span>
-                            </h2>
-                            <ul className="list-disc list-inside space-y-2 text-gray-700">
-                                {report.quickWins.map((win, index) => <li key={index}>{win}</li>)}
-                            </ul>
-                        </section>
-                        <section>
-                            <h2 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-4 flex items-center gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /> </svg>
-                                <span>90-Day Build Plan</span>
-                            </h2>
-                            <ul className="list-disc list-inside space-y-2 text-gray-700">
-                                {report.buildPlan.map((item, index) => <li key={index}>{item}</li>)}
-                            </ul>
-                        </section>
-                    </div>
+                      <div className="grid md:grid-cols-2 gap-10 mb-10">
+                          <section>
+                              <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /> </svg>
+                                  <span>Quick Wins (This Week)</span>
+                              </h2>
+                              <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
+                                  {report.quickWins.map((win, index) => <li key={index}>{win}</li>)}
+                              </ul>
+                          </section>
+                          <section>
+                              <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /> </svg>
+                                  <span>90-Day Build Plan</span>
+                              </h2>
+                              <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
+                                  {report.buildPlan.map((item, index) => <li key={index}>{item}</li>)}
+                              </ul>
+                          </section>
+                      </div>
 
-                     <section className="mb-10">
-                        <h2 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-4 flex items-center gap-3">
-                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 20.944a11.955 11.955 0 019-4.527 11.955 11.955 0 019 4.527 12.02 12.02 0 00-2.382-8.984z" /> </svg>
-                           <span>Guardrails & Watchouts</span>
-                        </h2>
-                        <ul className="list-disc list-inside space-y-2 text-gray-700 bg-yellow-50 p-4 rounded-lg">
-                           {report.guardrails.map((item, index) => <li key={index}>{item}</li>)}
-                        </ul>
-                    </section>
+                       <section className="mb-10">
+                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 20.944a11.955 11.955 0 019-4.527 11.955 11.955 0 019 4.527 12.02 12.02 0 00-2.382-8.984z" /> </svg>
+                             <span>Guardrails & Watchouts</span>
+                          </h2>
+                          <ul className="list-disc list-inside space-y-2 text-noir-text-secondary bg-noir-accent bg-opacity-10 p-4 rounded-lg">
+                             {report.guardrails.map((item, index) => <li key={index}>{item}</li>)}
+                          </ul>
+                      </section>
 
-                     <section className="mb-10">
-                        <h2 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-4 flex items-center gap-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /> <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /> </svg>
-                            <span>Your P.I. Toolkit</span>
-                         </h2>
-                         <ul className="list-disc list-inside space-y-2 text-gray-700">
-                            {report.tools.map((item, index) => <li key={index}>{item}</li>)}
-                        </ul>
-                    </section>
-                    
-                    <section>
-                        <h2 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-4 flex items-center gap-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /> </svg>
-                            <span>Starter Prompts for Gemini</span>
-                        </h2>
-                        <div className="space-y-4">
-                         {report.starterPrompts.map((p, index) => (
-                            <div key={index} className="p-4 bg-gray-100 rounded-lg">
-                               <h3 className="font-bold text-gray-800">{p.title}</h3>
-                               <p className="text-gray-600 font-mono text-sm mt-2 p-3 bg-gray-200 rounded">{p.prompt}</p>
-                           </div>
-                         ))}
-                        </div>
-                    </section>
-                </main>
-            </div>
-            <div className="mt-8 text-center flex gap-4 justify-center">
-                 <button onClick={onBack} className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-md">
-                    Back to Form
-                </button>
-                <button onClick={downloadPdf} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-md">
-                    Download as PDF
-                </button>
-            </div>
+                       <section className="mb-10">
+                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /> <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /> </svg>
+                              <span>Your P.I. Toolkit</span>
+                           </h2>
+                           <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
+                              {report.tools.map((item, index) => <li key={index}>{item}</li>)}
+                          </ul>
+                      </section>
+                      
+                      <section>
+                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /> </svg>
+                              <span>Starter Prompts for Gemini</span>
+                          </h2>
+                          <div className="space-y-4">
+                           {report.starterPrompts.map((p, index) => (
+                              <div key={index} className="p-4 bg-noir-border bg-opacity-50 rounded-lg">
+                                 <h3 className="font-bold text-noir-text">{p.title}</h3>
+                                 <p className="text-noir-text-secondary font-mono text-sm mt-2 p-3 bg-noir-bg rounded">{p.prompt}</p>
+                             </div>
+                           ))}
+                          </div>
+                      </section>
+                  </main>
+              </div>
+              <div className="mt-8 text-center flex gap-4 justify-center">
+                   <button onClick={onBack} className="bg-noir-text-secondary hover:bg-opacity-80 text-noir-paper font-bold py-3 px-6 rounded-lg transition-colors shadow-md">
+                      Back to Form
+                  </button>
+                  <button onClick={downloadPdf} className="bg-noir-accent hover:bg-noir-accent-hover text-noir-paper font-bold py-3 px-6 rounded-lg transition-colors shadow-md">
+                      Download as PDF
+                  </button>
+              </div>
+          </div>
         </div>
     );
 };
@@ -557,11 +559,11 @@ const App: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-                <div className="font-heading text-3xl text-gray-700">Analyzing Your Dossier...</div>
-                <div className="mt-4 text-gray-600 animate-pulse">Checking the angles... dusting for prints...</div>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-noir-bg p-4">
+                <div className="font-heading text-3xl text-noir-text">Analyzing Your Dossier...</div>
+                <div className="mt-4 text-noir-text-secondary animate-pulse">Checking the angles... dusting for prints...</div>
                  {/* Spinner SVG */}
-                <svg className="animate-spin h-10 w-10 text-indigo-600 mt-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-10 w-10 text-noir-accent mt-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -571,10 +573,10 @@ const App: React.FC = () => {
     
     if (error) {
         return (
-             <div className="flex flex-col items-center justify-center min-h-screen bg-red-50 p-4 text-center">
-                <h2 className="font-heading text-3xl text-red-700">A Snag in the Case</h2>
-                <p className="mt-4 text-red-600 max-w-md">{error}</p>
-                 <button onClick={() => { setError(null); setIsLoading(false); }} className="mt-6 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+             <div className="flex flex-col items-center justify-center min-h-screen bg-noir-red bg-opacity-10 p-4 text-center">
+                <h2 className="font-heading text-3xl text-noir-red">A Snag in the Case</h2>
+                <p className="mt-4 text-noir-red max-w-md">{error}</p>
+                 <button onClick={() => { setError(null); setIsLoading(false); }} className="mt-6 bg-noir-red hover:bg-opacity-80 text-white font-bold py-2 px-4 rounded-lg transition-colors">
                     Try Again
                 </button>
             </div>
@@ -586,27 +588,27 @@ const App: React.FC = () => {
     }
 
     return (
-        <div className="bg-gray-50 min-h-screen p-4 sm:p-6 md:p-8">
-            <div className="max-w-4xl mx-auto bg-white p-6 sm:p-8 md:p-12 rounded-lg shadow-2xl">
-                <header className="text-center border-b-2 border-gray-200 pb-6 mb-8">
-                    <h1 className="font-heading text-3xl md:text-4xl text-gray-800">Create Your Own Manifesto & Plan for Building a Business Around Your Unique Skills as a Persuasion Imagineer</h1>
-                    <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Uncover Your Strengths, Discover New Markets, And Get A Step-By-Step Plan To Turn What You Do Best Into What The World Needs Most.</p>
-                    <div className="mt-6 text-left text-gray-700 max-w-2xl mx-auto">
+        <div className="bg-noir-bg min-h-screen p-4 sm:p-6 md:p-8">
+            <div className="max-w-4xl mx-auto bg-noir-paper p-6 sm:p-8 md:p-12 rounded-lg shadow-2xl">
+                <header className="text-center border-b-2 border-noir-border pb-6 mb-8">
+                    <h1 className="font-heading text-3xl md:text-4xl text-noir-text">Create Your Own Manifesto & Plan for Building a Business Around Your Unique Skills as a Persuasion Imagineer</h1>
+                    <p className="mt-4 text-lg text-noir-text-secondary max-w-3xl mx-auto">Uncover Your Strengths, Discover New Markets, And Get A Step-By-Step Plan To Turn What You Do Best Into What The World Needs Most.</p>
+                    <div className="mt-6 text-left text-noir-text-secondary max-w-2xl mx-auto">
                       <p className="mb-4">The Persuasion Imagineering Manifesto & Plan is more than just another personality assessment — it’s your customized Roadmap to Reinvention. In just minutes, you’ll uncover:</p>
                       <ul className="list-none space-y-2">
-                          <li className="flex items-start"><span className="text-indigo-500 font-bold mr-2">▶</span><span>A custom Persona showing how your unique blend of strategic, creative, technical, and emotional skills connects to real business opportunities.</span></li>
-                          <li className="flex items-start"><span className="text-indigo-500 font-bold mr-2">▶</span><span>Clear directions for turning your strengths into specific offers, audiences, and revenue streams.</span></li>
-                          <li className="flex items-start"><span className="text-indigo-500 font-bold mr-2">▶</span><span>Tools and technologies to amplify your work and extend your creative reach — without dulling your voice.</span></li>
-                          <li className="flex items-start"><span className="text-indigo-500 font-bold mr-2">▶</span><span>Your 7-Day Action Sprint with simple, concrete steps to start building momentum right now.</span></li>
-                          <li className="flex items-start"><span className="text-indigo-500 font-bold mr-2">▶</span><span>Your 31-Day Guide to Relentless Execution, taking your ideas week by week from insight to implementation.</span></li>
+                          <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>A custom Persona showing how your unique blend of strategic, creative, technical, and emotional skills connects to real business opportunities.</span></li>
+                          <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>Clear directions for turning your strengths into specific offers, audiences, and revenue streams.</span></li>
+                          <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>Tools and technologies to amplify your work and extend your creative reach — without dulling your voice.</span></li>
+                          <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>Your 7-Day Action Sprint with simple, concrete steps to start building momentum right now.</span></li>
+                          <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>Your 31-Day Guide to Relentless Execution, taking your ideas week by week from insight to implementation.</span></li>
                       </ul>
-                      <p className="mt-4 font-medium">Your Manifesto & Plan will show you where to focus, what to build, and how to make your mark in the most exciting creative era in history.</p>
+                      <p className="mt-4 font-medium text-noir-text">Your Manifesto & Plan will show you where to focus, what to build, and how to make your mark in the most exciting creative era in history.</p>
                     </div>
                 </header>
 
                 <form onSubmit={handleSubmit}>
                     <section className="mb-10">
-                        <h3 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-6">Skill Stack Rundown</h3>
+                        <h3 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-6">Skill Stack Rundown</h3>
                         {SKILL_KEYS.map(key => (
                             <SliderInput
                                 key={key}
@@ -620,7 +622,7 @@ const App: React.FC = () => {
                     </section>
 
                     <section className="mb-10">
-                        <h3 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-6">Lay Of The Land</h3>
+                        <h3 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-6">Lay Of The Land</h3>
                         
                         <MultiSelect
                           label="My Preferred Workstyle Is To... (select up to 3)"
@@ -630,8 +632,8 @@ const App: React.FC = () => {
                         />
                         
                          <div className="mb-6">
-                            <label htmlFor="time_per_week_hours" className="block text-lg font-medium text-gray-800 mb-2">Weekly Time Commitment</label>
-                            <p className="text-sm text-gray-600 italic mb-3">How many hours per week can you realistically dedicate to a new project?</p>
+                            <label htmlFor="time_per_week_hours" className="block text-lg font-medium text-noir-text mb-2">Weekly Time Commitment</label>
+                            <p className="text-sm text-noir-text-secondary italic mb-3">How many hours per week can you realistically dedicate to a new project?</p>
                             <input
                               id="time_per_week_hours"
                               name="time_per_week_hours"
@@ -641,9 +643,9 @@ const App: React.FC = () => {
                               step="1"
                               value={formData.time_per_week_hours}
                               onChange={handleSliderChange}
-                              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                              className="w-full h-2 bg-noir-border rounded-lg appearance-none cursor-pointer"
                             />
-                            <div className="text-center font-bold text-indigo-600 text-base mt-2">{formData.time_per_week_hours} hours / week</div>
+                            <div className="text-center font-bold text-noir-green text-base mt-2">{formData.time_per_week_hours} hours / week</div>
                         </div>
 
                         <RadioGroup
@@ -670,58 +672,58 @@ const App: React.FC = () => {
                         />
 
                         <div className="mb-6">
-                          <label htmlFor="wildcards" className="block text-lg font-medium text-gray-800 mb-2">Your Wildcard Skills & Interests</label>
-                          <p className="text-sm text-gray-600 italic mb-3">What are your secret weapons? (e.g., "Former improv comic," "Speak fluent Klingon," "Can bake a professional-grade sourdough," "Obsessed with 18th-century naval history," etc.)</p>
+                          <label htmlFor="wildcards" className="block text-lg font-medium text-noir-text mb-2">Your Wildcard Skills & Interests</label>
+                          <p className="text-sm text-noir-text-secondary italic mb-3">What are your secret weapons? (e.g., "Former improv comic," "Speak fluent Klingon," "Can bake a professional-grade sourdough," "Obsessed with 18th-century naval history," etc.)</p>
                           <textarea
                             id="wildcards"
                             name="wildcards"
                             rows={3}
                             value={formData.wildcards}
                             onChange={handleInputChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"
+                            className="mt-1 block w-full rounded-md bg-transparent border-noir-border shadow-sm focus:border-noir-accent focus:ring-noir-accent sm:text-sm p-2"
                             placeholder="List any unique hobbies, skills, or passions here..."
                           ></textarea>
                         </div>
                         
                          <div className="mb-6">
-                           <label htmlFor="constraints" className="block text-lg font-medium text-gray-800 mb-2">Constraints, Fears, or Blockers</label>
-                            <p className="text-sm text-gray-600 italic mb-3">What's holding you back? Be honest. (e.g., "Fear of being on camera," "I hate cold-calling," "No existing audience," "Limited time due to family.")</p>
+                           <label htmlFor="constraints" className="block text-lg font-medium text-noir-text mb-2">Constraints, Fears, or Blockers</label>
+                            <p className="text-sm text-noir-text-secondary italic mb-3">What's holding you back? Be honest. (e.g., "Fear of being on camera," "I hate cold-calling," "No existing audience," "Limited time due to family.")</p>
                            <textarea
                             id="constraints"
                             name="constraints"
                             rows={3}
                             value={formData.constraints}
                             onChange={handleInputChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"
+                            className="mt-1 block w-full rounded-md bg-transparent border-noir-border shadow-sm focus:border-noir-accent focus:ring-noir-accent sm:text-sm p-2"
                             placeholder="What challenges or fears are on your mind?"
                           ></textarea>
                         </div>
                     </section>
                     
                      <section className="mb-6">
-                        <h3 className="font-heading text-2xl text-gray-800 border-b border-gray-300 pb-2 mb-6">Final Authorization</h3>
+                        <h3 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-6">Final Authorization</h3>
                         <div className="mb-4">
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
+                            <label htmlFor="name" className="block text-sm font-medium text-noir-text">Name</label>
                             <input
                                 type="text"
                                 name="name"
                                 id="name"
                                 value={formData.name}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"
+                                className="mt-1 block w-full rounded-md bg-transparent border-noir-border shadow-sm focus:border-noir-accent focus:ring-noir-accent sm:text-sm p-2"
                                 required
                             />
                         </div>
 
                         <div className="mb-6">
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
+                            <label htmlFor="email" className="block text-sm font-medium text-noir-text">Email Address</label>
                             <input
                                 type="email"
                                 name="email"
                                 id="email"
                                 value={formData.email}
                                 onChange={handleInputChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"
+                                className="mt-1 block w-full rounded-md bg-transparent border-noir-border shadow-sm focus:border-noir-accent focus:ring-noir-accent sm:text-sm p-2"
                                 required
                             />
                         </div>
@@ -733,21 +735,21 @@ const App: React.FC = () => {
                                     type="checkbox"
                                     checked={formData.consent}
                                     onChange={handleInputChange}
-                                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    className="h-4 w-4 rounded border-noir-border text-noir-accent focus:ring-noir-accent"
                                     required
                                  />
                             </div>
                             <div className="ml-3 text-sm">
-                                <label htmlFor="consent" className="font-medium text-gray-700">Keep My Data Off the Record</label>
-                                <p className="text-gray-500">Strictly confidential — NEVER shared — and used only to generate my Manifesto & Plan and send updates. I can unsubscribe anytime.</p>
+                                <label htmlFor="consent" className="font-medium text-noir-text">Keep My Data Off the Record</label>
+                                <p className="text-noir-text-secondary">Strictly confidential — NEVER shared — and used only to generate my Manifesto & Plan and send updates. I can unsubscribe anytime.</p>
                             </div>
                         </div>
                     </section>
 
-                    <div className="mt-8 pt-6 border-t border-gray-200">
+                    <div className="mt-8 pt-6 border-t border-noir-border">
                         <button
                             type="submit"
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-4 rounded-lg text-xl transition-transform transform hover:scale-105 shadow-lg"
+                            className="w-full bg-noir-accent hover:bg-noir-accent-hover text-noir-paper font-bold py-4 px-4 rounded-lg text-xl transition-transform transform hover:scale-105 shadow-lg"
                             disabled={!formData.consent || !formData.name || !formData.email}
                         >
                            Show Me The Plan
