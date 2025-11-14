@@ -1,3 +1,4 @@
+
 // v1.0.1 - Forcing git update.
 import React, { useState, useCallback, useRef, FormEvent, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
@@ -763,7 +764,7 @@ const App: React.FC = () => {
                             className="w-full bg-noir-accent hover:bg-noir-accent-hover text-noir-paper font-bold py-4 px-4 rounded-lg text-xl transition-transform transform hover:scale-105 shadow-lg"
                             disabled={!formData.consent || !formData.name || !formData.email}
                         >
-                           Show Me The Plan
+                           Show Me My P.I. Persona & Manifesto
                         </button>
                     </div>
                 </form>
