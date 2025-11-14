@@ -312,27 +312,28 @@ const ReportDisplay: React.FC<{ report: Report; onBack: () => void; formData: Fo
                               ))}
                           </div>
                       </section>
+                      <div className="flex flex-col gap-8">
+                        <section>
+                            <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /> </svg>
+                                <span>7-Day Action Sprint</span>
+                            </h2>
+                            <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
+                                {report.quickWins.map((win, index) => <li key={index}>{win}</li>)}
+                            </ul>
+                        </section>
+                        <section>
+                            <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /> </svg>
+                                <span>90 Day Relentless Execution Plan</span>
+                            </h2>
+                            <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
+                                {report.buildPlan.map((item, index) => <li key={index}>{item}</li>)}
+                            </ul>
+                        </section>
+                      </div>
 
-                      <section className="mb-10">
-                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /> </svg>
-                              <span>Quick Wins (This Week)</span>
-                          </h2>
-                          <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
-                              {report.quickWins.map((win, index) => <li key={index}>{win}</li>)}
-                          </ul>
-                      </section>
-                      <section className="mb-10">
-                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /> </svg>
-                              <span>90-Day Build Plan</span>
-                          </h2>
-                          <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
-                              {report.buildPlan.map((item, index) => <li key={index}>{item}</li>)}
-                          </ul>
-                      </section>
-
-                       <section className="mb-10">
+                       <section className="mb-10 mt-10">
                           <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 20.944a11.955 11.955 0 019-4.527 11.955 11.955 0 019 4.527 12.02 12.02 0 00-2.382-8.984z" /> </svg>
                              <span>Guardrails & Watchouts</span>
@@ -598,7 +599,7 @@ const App: React.FC = () => {
                           <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>Clear directions for turning your strengths into specific offers, audiences, and revenue streams.</span></li>
                           <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>Tools and technologies to amplify your work and extend your creative reach — without dulling your voice.</span></li>
                           <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>Your 7-Day Action Sprint with simple, concrete steps to start building momentum right now.</span></li>
-                          <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>Your 31-Day Guide to Relentless Execution, taking your ideas week by week from insight to implementation.</span></li>
+                          <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>Your 90 Day Relentless Execution Plan - turning insights into implementation.</span></li>
                       </ul>
                       <p className="mt-4 font-medium text-noir-text">Your Manifesto & Plan will show you where to focus, what to build, and how to make your mark in the most exciting creative era in history.</p>
                     </div>
