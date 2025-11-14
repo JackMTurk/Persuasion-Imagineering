@@ -590,10 +590,22 @@ const App: React.FC = () => {
         <div className="bg-noir-bg min-h-screen p-4 sm:p-6 md:p-8">
             <div className="max-w-4xl mx-auto bg-noir-paper p-6 sm:p-8 md:p-12 rounded-lg shadow-2xl">
                 <header className="text-center border-b-2 border-noir-border pb-6 mb-8">
-                    <h1 className="font-heading text-3xl md:text-4xl text-noir-text">Create Your Own Manifesto & Plan for Building a Business Around Your Unique Skills as a Persuasion Imagineer</h1>
-                    <p className="mt-4 text-lg text-noir-text-secondary max-w-3xl mx-auto">Uncover Your Strengths, Discover New Markets, And Get A Step-By-Step Plan To Turn What You Do Best Into What The World Needs Most.</p>
+                    <h1 className="font-heading text-2xl md:text-3xl text-noir-text">Discover Your Persuasion Imagineer Persona — Your Personalized Manifesto & Step-By-Step Plan Revealing Exactly Where Your Talents Pay Off Most in the AI Age, What Opportunities to Pursue, and How to Profit From What You Already Do Best.</h1>
+                    <p className="mt-4 text-lg text-noir-text-secondary max-w-3xl mx-auto">Get a Personal Roadmap That Uncovers Where Your Strengths Shine, Who’s Ready to Pay for Them, and How to Turn Your Best Skills Into Real Profit.</p>
+                    <div className="my-8">
+                        {/* 
+                          INSTRUCTION: 
+                          Host your image online (e.g., on Imgur, your own website, etc.) 
+                          and paste the direct URL into the `src` attribute below, replacing the placeholder link.
+                        */}
+                        <img 
+                          src="https://magamarketingsecrets.com/wp-content/uploads/2025/11/Hero1a.jpg" 
+                          alt="Persuasion Imagineer detective in a futuristic noir office" 
+                          className="w-full max-w-xl mx-auto rounded-lg shadow-lg" 
+                        />
+                    </div>
                     <div className="mt-6 text-left text-noir-text-secondary max-w-2xl mx-auto">
-                      <p className="mb-4">The Persuasion Imagineering Manifesto & Plan is more than just another personality assessment — it’s your customized Roadmap to Reinvention. In just minutes, you’ll uncover:</p>
+                      <p className="mb-4">The Persuasion Imagineering Manifesto & Plan isn’t a quiz or a personality test. It’s a focused look at what you already do well, where those strengths carry the most value, and the specific opportunities that fit you best. In just a couple of minutes, you’ll walk away with clear direction and a working plan you can act on right away, including:</p>
                       <ul className="list-none space-y-2">
                           <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>A custom Persona showing how your unique blend of strategic, creative, technical, and emotional skills connects to real business opportunities.</span></li>
                           <li className="flex items-start"><span className="text-noir-accent font-bold mr-2">▶</span><span>Clear directions for turning your strengths into specific offers, audiences, and revenue streams.</span></li>
