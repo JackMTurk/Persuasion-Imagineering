@@ -591,6 +591,7 @@ const App: React.FC = () => {
         <div className="bg-noir-bg min-h-screen p-4 sm:p-6 md:p-8">
             <div className="max-w-4xl mx-auto bg-noir-paper p-6 sm:p-8 md:p-12 rounded-lg shadow-2xl">
                 <header className="text-center border-b-2 border-noir-border pb-6 mb-8">
+                    <p className="mb-4 text-lg text-noir-text-secondary max-w-3xl mx-auto text-left">For Copywriters, Creators, and Marketers Unsure How AI Is Reshaping Their Future…</p>
                     <h1 className="font-heading text-2xl md:text-3xl text-noir-text">Discover Your Persuasion Imagineer Persona — Your Personalized Manifesto & Step-By-Step Plan Revealing Exactly Where Your Talents Pay Off Most in the AI Age, What Opportunities to Pursue, and How to Profit From What You Already Do Best.</h1>
                     <p className="mt-4 text-lg text-noir-text-secondary max-w-3xl mx-auto">Get a Personal Roadmap That Uncovers Where Your Strengths Shine, Who’s Ready to Pay for Them, and How to Turn Your Best Skills Into Real Profit.</p>
                     <div className="my-8">
