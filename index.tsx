@@ -1,4 +1,4 @@
-// v1.0.1 - Forcing git update.
+// v1.0.7 - Server-Side Generation Fix
 import React, { useState, useCallback, useRef, FormEvent, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Type } from "@google/genai";
@@ -57,36 +57,35 @@ export interface Report {
 
 // --- Persona Logic ---
 const PERSONA_MAP: { persona: string, skills: (keyof Scores)[] }[] = [
-  { persona: 'Narrative Architect', skills: ['communication', 'strategy'] }, { persona: 'System Builder', skills: ['technical', 'strategy'] },
-  { persona: 'Creator-Educator', skills: ['communication', 'creative'] }, { persona: 'Opportunity Synthesist', skills: ['learning', 'strategy'] },
-  { persona: 'Empathic Facilitator', skills: ['eq', 'communication'] }, { persona: 'Visual Storysmith', skills: ['creative', 'communication'] },
-  { persona: 'Operator-Automator', skills: ['technical', 'communication'] }, { persona: 'Community Catalyst', skills: ['eq', 'strategy', 'communication'] },
+  { persona: 'The Story Detective', skills: ['communication', 'strategy'] }, { persona: 'The Night Architect', skills: ['technical', 'strategy'] },
+  { persona: 'The Voice in the Dark', skills: ['communication', 'creative'] }, { persona: 'The Horizon Scout', skills: ['learning', 'strategy'] },
+  { persona: 'The Illusion Mechanic', skills: ['eq', 'communication'] }, { persona: 'The Concept Alchemist', skills: ['creative', 'communication'] },
+  { persona: 'The System Locksmith', skills: ['technical', 'communication'] }, { persona: 'The Quiet Operator', skills: ['eq', 'strategy', 'communication'] },
 ];
 
-const getTopSkills = (scores: Scores, count = 2): (keyof Scores)[] => {
-  return (Object.keys(scores) as (keyof Scores)[])
-    .sort((a, b) => scores[b] - scores[a])
-    .slice(0, count);
+const PERSONA_IMAGES: Record<string, string> = {
+  'The Concept Alchemist': 'https://magamarketingsecrets.com/wp-content/uploads/2025/11/ConceptAlchemist.jpg',
+  'The Horizon Scout': 'https://magamarketingsecrets.com/wp-content/uploads/2025/11/HorizonScout.jpg',
+  'The Illusion Mechanic': 'https://magamarketingsecrets.com/wp-content/uploads/2025/11/IllusionMechanic.jpg',
+  'The Night Architect': 'https://magamarketingsecrets.com/wp-content/uploads/2025/11/NightArchitect.jpg',
+  'The Quiet Operator': 'https://magamarketingsecrets.com/wp-content/uploads/2025/11/QuietOperator.jpg',
+  'The Story Detective': 'https://magamarketingsecrets.com/wp-content/uploads/2025/11/StoryDetective.jpg',
+  'The System Locksmith': 'https://magamarketingsecrets.com/wp-content/uploads/2025/11/SystemLocksmith.jpg',
+  'The Voice in the Dark': 'https://magamarketingsecrets.com/wp-content/uploads/2025/11/VoiceInTheDark.jpg',
 };
 
 export const determinePersona = (scores: Scores): string => {
-  const topTwoSkills = getTopSkills(scores, 2);
-  const topThreeSkills = getTopSkills(scores, 3);
+  // Calculate the total score for each persona based on the user's skills
+  const scoredPersonas = PERSONA_MAP.map(p => {
+    const totalScore = p.skills.reduce((sum, skill) => sum + scores[skill], 0);
+    return { ...p, totalScore };
+  });
 
-  // Check for 3-skill personas first
-  const threeSkillPersona = PERSONA_MAP.find(p =>
-    p.skills.length === 3 && p.skills.every(skill => topThreeSkills.includes(skill))
-  );
-  if (threeSkillPersona) return threeSkillPersona.persona;
+  // Sort by total score descending
+  scoredPersonas.sort((a, b) => b.totalScore - a.totalScore);
 
-  // Check for 2-skill personas
-  const twoSkillPersona = PERSONA_MAP.find(p =>
-    p.skills.length === 2 && p.skills.every(skill => topTwoSkills.includes(skill))
-  );
-  if (twoSkillPersona) return twoSkillPersona.persona;
-
-  // Fallback persona
-  return 'Integrated Imagineer';
+  // Return the top match
+  return scoredPersonas[0].persona;
 };
 
 
@@ -306,162 +305,272 @@ const RadioGroup: React.FC<{ name: string; options: {value: string, label: strin
 
 
 const ReportDisplay: React.FC<{ report: Report; onBack: () => void; formData: FormData; persona: string }> = ({ report, onBack, formData, persona }) => {
-    const reportRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+    // Get the correct image URL for the persona, defaulting to a fallback if not found
+    const personaImage = PERSONA_IMAGES[persona] || "https://magamarketingsecrets.com/wp-content/uploads/2025/11/Hero1a.jpg";
 
     const downloadPdf = async () => {
+        setIsGeneratingPdf(true);
         const { jsPDF } = window.jspdf;
-        const reportElement = reportRef.current;
-        if (!reportElement) return;
+        
+        // The strict list of IDs corresponding to the 10 pages
+        const pageIds = [
+            'pdf-page-1',  // Identity, Header
+            'pdf-page-2',  // Strengths
+            'pdf-page-3',  // Opp 1
+            'pdf-page-4',  // Opp 2
+            'pdf-page-5',  // Opp 3
+            'pdf-page-6',  // Quick Wins
+            'pdf-page-7',  // Build Plan
+            'pdf-page-8',  // Guardrails
+            'pdf-page-9',  // Tools
+            'pdf-page-10'  // Prompts + Footer
+        ];
 
         try {
-            const canvas = await window.html2canvas(reportElement, { scale: 2, backgroundColor: '#fefdf6' });
-            const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight =canvas.height;
-            const ratio = imgWidth / imgHeight;
-            const height = pdfWidth / ratio;
-            let position = 0;
-            let remainingHeight = imgHeight * pdfWidth / imgWidth;
 
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, height);
-            remainingHeight -= pdfHeight;
+            for (let i = 0; i < pageIds.length; i++) {
+                const elementId = pageIds[i];
+                const element = document.getElementById(elementId);
 
-            while (remainingHeight > 0) {
-                position -= pdfHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, height);
-                remainingHeight -= pdfHeight;
+                if (element) {
+                    // Add a new page for every section except the first
+                    if (i > 0) {
+                        pdf.addPage();
+                    }
+
+                    const canvas = await window.html2canvas(element, { 
+                        scale: 2, 
+                        backgroundColor: '#fefdf6', // Match noir-paper
+                        useCORS: true,
+                        logging: false,
+                        windowWidth: 1200, // Force desktop rendering width for consistent PDF layout
+                        ignoreElements: (element: Element) => {
+                            // This ensures any element with data-html2canvas-ignore is skipped
+                            return element.hasAttribute('data-html2canvas-ignore');
+                        }
+                    });
+
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    const imgWidth = canvas.width;
+                    const imgHeight = canvas.height;
+                    const ratio = imgWidth / imgHeight;
+                    const renderedHeight = pdfWidth / ratio;
+                    
+                    // Add image at the top of the page (0,0) fitting width
+                    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, renderedHeight);
+                }
             }
 
             pdf.save(`Persuasion-Imagineering-Report-${formData.name}.pdf`);
         } catch (error) {
             console.error("Error generating PDF:", error);
             alert("Sorry, there was an error generating the PDF. Please try again.");
+        } finally {
+            setIsGeneratingPdf(false);
         }
     };
 
+    // Common wrapper style for PDF pages (adds padding and visual separation on screen)
+    const PageWrapper: React.FC<{ id: string, children: React.ReactNode }> = ({ id, children }) => (
+        <div id={id} className="bg-noir-paper p-8 md:p-12 mb-8 rounded-lg shadow-sm border border-noir-border">
+            {children}
+        </div>
+    );
 
     return (
         <div className="bg-noir-bg min-h-screen p-4 sm:p-6 md:p-8">
-          <div className="max-w-3xl mx-auto bg-noir-paper p-6 sm:p-8 md:p-12 rounded-lg shadow-2xl">
-              <div ref={reportRef} className="report-content p-8">
+          <div ref={containerRef} className="max-w-4xl mx-auto">
+              
+              {/* PAGE 1: Identity */}
+              <PageWrapper id="pdf-page-1">
                    <header className="text-center border-b-2 border-noir-border pb-6 mb-8">
                       <h1 className="font-heading text-4xl md:text-5xl text-noir-text">Your P.I. Manifesto & Plan</h1>
                       <p className="text-lg text-noir-text-secondary mt-2">Prepared for: {formData.name}</p>
                       <p className="font-heading text-2xl text-noir-green mt-4">Your Persona: {persona}</p>
+                      
+                      {/* 
+                        IMAGE:
+                        Added data-html2canvas-ignore="true" so this div is VISIBLE on screen 
+                        but COMPLETELY IGNORED by the PDF generator.
+                      */}
+                      <div className="my-8 flex justify-center" data-html2canvas-ignore="true">
+                         <img 
+                            src={personaImage}
+                            alt={`${persona} illustration`}
+                            className="max-w-xs max-h-64 rounded-lg shadow-xl border-2 border-noir-text"
+                         />
+                      </div>
                   </header>
+                  <section>
+                        <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-1.026.977-2.206.977-3.454a5.002 5.002 0 00-4.476-4.972M6.363 18.243A13.973 13.973 0 015 14.25a5.002 5.002 0 014.476-4.972M12 11v-1a4 4 0 00-4-4H6.363" /> </svg>
+                            <span>Your P.I. Identity</span>
+                        </h2>
+                        <p className="text-noir-text-secondary leading-relaxed">{report.identityParagraph}</p>
+                  </section>
+              </PageWrapper>
 
-                  <main>
-                      <section className="mb-10">
-                           <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-1.026.977-2.206.977-3.454a5.002 5.002 0 00-4.476-4.972M6.363 18.243A13.973 13.973 0 015 14.25a5.002 5.002 0 014.476-4.972M12 11v-1a4 4 0 00-4-4H6.363" /> </svg>
-                              <span>Your P.I. Identity</span>
-                           </h2>
-                           <p className="text-noir-text-secondary leading-relaxed">{report.identityParagraph}</p>
-                      </section>
+              {/* PAGE 2: Strengths */}
+              <PageWrapper id="pdf-page-2">
+                  <section>
+                      <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.05 10.1c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /> </svg>
+                          <span>Your Top Strengths</span>
+                      </h2>
+                      <ul className="space-y-4">
+                          {report.topStrengths.map((item, index) => (
+                              <li key={index} className="p-4 bg-noir-accent bg-opacity-10 rounded-lg">
+                                  <h3 className="font-bold text-noir-green">{item.strength}</h3>
+                                  <p className="text-noir-text-secondary">{item.reason}</p>
+                              </li>
+                          ))}
+                      </ul>
+                  </section>
+              </PageWrapper>
 
-                      <section className="mb-10">
-                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.05 10.1c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /> </svg>
-                              <span>Your Top Strengths</span>
-                          </h2>
-                          <ul className="space-y-4">
-                              {report.topStrengths.map((item, index) => (
-                                  <li key={index} className="p-4 bg-noir-accent bg-opacity-10 rounded-lg">
-                                      <h3 className="font-bold text-noir-green">{item.strength}</h3>
-                                      <p className="text-noir-text-secondary">{item.reason}</p>
-                                  </li>
-                              ))}
-                          </ul>
-                      </section>
-
-                      <section className="mb-10">
+              {/* PAGE 3: Opportunity Map + Opp 1 */}
+              {report.opportunityMap[0] && (
+                  <PageWrapper id="pdf-page-3">
+                      <section>
                           <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 16.382V5.618a1 1 0 00-1.447-.894L15 7m-6 13l6-3m0 0V7" /> </svg>
                               <span>Your Opportunity Map</span>
                           </h2>
-                          <div className="space-y-6">
-                             {report.opportunityMap.map((opp, index) => (
-                                  <div key={index} className="p-4 border border-noir-border rounded-lg shadow-sm">
-                                      <h3 className="font-heading text-xl text-noir-green mb-2">{opp.what}</h3>
-                                      <p className="mb-3"><strong className="font-medium text-noir-text">Why It's a Fit:</strong> <span className="text-noir-text-secondary">{opp.whyFit}</span></p>
-                                      <p><strong className="font-medium text-noir-text">Audience:</strong> <span className="text-noir-text-secondary">{opp.audience}</span></p>
-                                      <p><strong className="font-medium text-noir-text">Offer:</strong> <span className="text-noir-text-secondary">{opp.offer}</span></p>
-                                      <p><strong className="font-medium text-noir-text">Channel:</strong> <span className="text-noir-text-secondary">{opp.channel}</span></p>
-                                      <div className="mt-4 p-3 bg-noir-green bg-opacity-10 rounded">
-                                          <h4 className="font-bold text-noir-green">30-Day Speed Plan:</h4>
-                                          <p className="text-noir-text-secondary">{opp.speedPlan}</p>
-                                      </div>
-                                  </div>
-                              ))}
+                          <div className="p-4 border border-noir-border rounded-lg shadow-sm">
+                              <h3 className="font-heading text-xl text-noir-green mb-2">{report.opportunityMap[0].what}</h3>
+                              <p className="mb-3"><strong className="font-medium text-noir-text">Why It's a Fit:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[0].whyFit}</span></p>
+                              <p><strong className="font-medium text-noir-text">Audience:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[0].audience}</span></p>
+                              <p><strong className="font-medium text-noir-text">Offer:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[0].offer}</span></p>
+                              <p><strong className="font-medium text-noir-text">Channel:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[0].channel}</span></p>
+                              <div className="mt-4 p-3 bg-noir-green bg-opacity-10 rounded">
+                                  <h4 className="font-bold text-noir-green">30-Day Speed Plan:</h4>
+                                  <p className="text-noir-text-secondary">{report.opportunityMap[0].speedPlan}</p>
+                              </div>
                           </div>
                       </section>
-                      <div className="flex flex-col gap-8">
-                        <section>
-                            <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /> </svg>
-                                <span>7-Day Action Sprint</span>
-                            </h2>
-                            <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
-                                {report.quickWins.map((win, index) => <li key={index}>{win}</li>)}
-                            </ul>
-                        </section>
-                        <section>
-                            <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /> </svg>
-                                <span>90 Day Relentless Execution Plan</span>
-                            </h2>
-                            <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
-                                {report.buildPlan.map((item, index) => <li key={index}>{item}</li>)}
-                            </ul>
-                        </section>
+                  </PageWrapper>
+              )}
+
+              {/* PAGE 4: Opp 2 */}
+              {report.opportunityMap[1] && (
+                  <PageWrapper id="pdf-page-4">
+                      <div className="p-4 border border-noir-border rounded-lg shadow-sm">
+                          <h3 className="font-heading text-xl text-noir-green mb-2">{report.opportunityMap[1].what}</h3>
+                          <p className="mb-3"><strong className="font-medium text-noir-text">Why It's a Fit:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[1].whyFit}</span></p>
+                          <p><strong className="font-medium text-noir-text">Audience:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[1].audience}</span></p>
+                          <p><strong className="font-medium text-noir-text">Offer:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[1].offer}</span></p>
+                          <p><strong className="font-medium text-noir-text">Channel:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[1].channel}</span></p>
+                          <div className="mt-4 p-3 bg-noir-green bg-opacity-10 rounded">
+                              <h4 className="font-bold text-noir-green">30-Day Speed Plan:</h4>
+                              <p className="text-noir-text-secondary">{report.opportunityMap[1].speedPlan}</p>
+                          </div>
                       </div>
+                  </PageWrapper>
+              )}
 
-                       <section className="mb-10 mt-10">
-                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 20.944a11.955 11.955 0 019-4.527 11.955 11.955 0 019 4.527 12.02 12.02 0 00-2.382-8.984z" /> </svg>
-                             <span>Guardrails & Watchouts</span>
-                          </h2>
-                          <ul className="list-disc list-inside space-y-2 text-noir-text-secondary bg-noir-accent bg-opacity-10 p-4 rounded-lg">
-                             {report.guardrails.map((item, index) => <li key={index}>{item}</li>)}
-                          </ul>
-                      </section>
-
-                       <section className="mb-10">
-                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /> <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /> </svg>
-                              <span>Your P.I. Toolkit</span>
-                           </h2>
-                           <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
-                              {report.tools.map((item, index) => <li key={index}>{item}</li>)}
-                          </ul>
-                      </section>
-                      
-                      <section>
-                          <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /> </svg>
-                              <span>Starter Prompts for Gemini</span>
-                          </h2>
-                          <div className="space-y-4">
-                           {report.starterPrompts.map((p, index) => (
-                              <div key={index} className="p-4 bg-noir-border bg-opacity-50 rounded-lg">
-                                 <h3 className="font-bold text-noir-text">{p.title}</h3>
-                                 <p className="text-noir-text-secondary font-mono text-sm mt-2 p-3 bg-noir-bg rounded">{p.prompt}</p>
-                             </div>
-                           ))}
+              {/* PAGE 5: Opp 3 */}
+              {report.opportunityMap[2] && (
+                  <PageWrapper id="pdf-page-5">
+                      <div className="p-4 border border-noir-border rounded-lg shadow-sm">
+                          <h3 className="font-heading text-xl text-noir-green mb-2">{report.opportunityMap[2].what}</h3>
+                          <p className="mb-3"><strong className="font-medium text-noir-text">Why It's a Fit:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[2].whyFit}</span></p>
+                          <p><strong className="font-medium text-noir-text">Audience:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[2].audience}</span></p>
+                          <p><strong className="font-medium text-noir-text">Offer:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[2].offer}</span></p>
+                          <p><strong className="font-medium text-noir-text">Channel:</strong> <span className="text-noir-text-secondary">{report.opportunityMap[2].channel}</span></p>
+                          <div className="mt-4 p-3 bg-noir-green bg-opacity-10 rounded">
+                              <h4 className="font-bold text-noir-green">30-Day Speed Plan:</h4>
+                              <p className="text-noir-text-secondary">{report.opportunityMap[2].speedPlan}</p>
                           </div>
-                      </section>
-                  </main>
-              </div>
+                      </div>
+                  </PageWrapper>
+              )}
+
+              {/* PAGE 6: 7-Day Action Sprint */}
+              <PageWrapper id="pdf-page-6">
+                  <section>
+                        <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /> </svg>
+                            <span>7-Day Action Sprint</span>
+                        </h2>
+                        <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
+                            {report.quickWins.map((win, index) => <li key={index}>{win}</li>)}
+                        </ul>
+                  </section>
+              </PageWrapper>
+
+              {/* PAGE 7: 90 Day Execution Plan */}
+              <PageWrapper id="pdf-page-7">
+                  <section>
+                        <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /> </svg>
+                            <span>90 Day Relentless Execution Plan</span>
+                        </h2>
+                        <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
+                            {report.buildPlan.map((item, index) => <li key={index}>{item}</li>)}
+                        </ul>
+                  </section>
+              </PageWrapper>
+
+              {/* PAGE 8: Guardrails */}
+              <PageWrapper id="pdf-page-8">
+                  <section>
+                      <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 20.944a11.955 11.955 0 019-4.527 11.955 11.955 0 019 4.527 12.02 12.02 0 00-2.382-8.984z" /> </svg>
+                         <span>Guardrails & Watchouts</span>
+                      </h2>
+                      <ul className="list-disc list-inside space-y-2 text-noir-text-secondary bg-noir-accent bg-opacity-10 p-4 rounded-lg">
+                         {report.guardrails.map((item, index) => <li key={index}>{item}</li>)}
+                      </ul>
+                  </section>
+              </PageWrapper>
+
+              {/* PAGE 9: Tools */}
+              <PageWrapper id="pdf-page-9">
+                  <section>
+                      <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /> <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /> </svg>
+                          <span>Your P.I. Toolkit</span>
+                       </h2>
+                       <ul className="list-disc list-inside space-y-2 text-noir-text-secondary">
+                          {report.tools.map((item, index) => <li key={index}>{item}</li>)}
+                      </ul>
+                  </section>
+              </PageWrapper>
+              
+              {/* PAGE 10: Prompts + Footer */}
+              <PageWrapper id="pdf-page-10">
+                  <section>
+                      <h2 className="font-heading text-2xl text-noir-text border-b border-noir-border pb-2 mb-4 flex items-center gap-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-noir-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /> </svg>
+                          <span>Starter Prompts</span>
+                      </h2>
+                      <div className="space-y-4 mb-8">
+                       {report.starterPrompts.map((p, index) => (
+                          <div key={index} className="p-4 bg-noir-border bg-opacity-50 rounded-lg">
+                             <h3 className="font-bold text-noir-text">{p.title}</h3>
+                             <p className="text-noir-text-secondary font-mono text-sm mt-2 p-3 bg-noir-bg rounded">{p.prompt}</p>
+                         </div>
+                       ))}
+                      </div>
+                      
+                      <div className="mt-12 pt-6 border-t border-noir-border text-center text-noir-text-secondary italic">
+                        <p>If you'd like help making any of this happen, email me at <a href="mailto:jack@KillerMarketingMachines.com" className="text-noir-accent font-bold hover:underline">jack@KillerMarketingMachines.com</a> to set up a free 30-Minute PI Manifesto and Action Plan review. There's no obligation, no charge.</p>
+                      </div>
+                  </section>
+              </PageWrapper>
+
               <div className="mt-8 text-center flex gap-4 justify-center">
                    <button onClick={onBack} className="bg-noir-text-secondary hover:bg-opacity-80 text-noir-paper font-bold py-3 px-6 rounded-lg transition-colors shadow-md">
                       Back to Form
                   </button>
-                  <button onClick={downloadPdf} className="bg-noir-accent hover:bg-noir-accent-hover text-noir-paper font-bold py-3 px-6 rounded-lg transition-colors shadow-md">
-                      Download as PDF
+                  <button onClick={downloadPdf} disabled={isGeneratingPdf} className={`bg-noir-accent hover:bg-noir-accent-hover text-noir-paper font-bold py-3 px-6 rounded-lg transition-colors shadow-md ${isGeneratingPdf ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                      {isGeneratingPdf ? 'Generating PDF...' : 'Download as PDF'}
                   </button>
               </div>
           </div>
@@ -512,36 +621,29 @@ const App: React.FC = () => {
         const currentPersona = determinePersona(formData.scores);
         setPersona(currentPersona);
 
-        const formDataWithPersona = {
-            ...formData,
-            persona: currentPersona,
-            jsonData: JSON.stringify(formData, null, 2)
-        };
-
         const userContent = createUserContent(formData, currentPersona);
 
         try {
             const schema = generateJsonSchema();
             
-            const apiResponse = await fetch('/api/generate', {
+            // Send request to the secure server endpoint instead of calling Client SDK directly
+            const response = await fetch('/api/generate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    formData: formDataWithPersona,
+                    formData, // Passed for context/logging on server if needed
+                    schema,
                     systemInstruction,
-                    userContent,
-                    schema
-                }),
+                    userContent
+                })
             });
 
-            if (!apiResponse.ok) {
-                const errorData = await apiResponse.json();
-                throw new Error(errorData.error || `HTTP error! status: ${apiResponse.status}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Server error: ${response.statusText}`);
             }
 
-            const reportData = await apiResponse.json();
+            const reportData = await response.json();
             
             // Also send data to AWeber/Make.com webhook
             fetch(AWEBER_ENDPOINT, {
@@ -782,6 +884,9 @@ const App: React.FC = () => {
         </div>
     );
 };
-
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-root.render(<App />);
+const root = ReactDOM.createRoot(document.getElementById('root')!);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
